@@ -18,9 +18,14 @@ function script() {
         .pipe(gulp.dest('dist'));
 };
 
+function hammer() {
+    return gulp.src('node_modules/hammerjs/hammer.js')
+        .pipe(gulp.dest('dist/client'));
+};
+
 function watchSource() {
-    return gulp.watch(['src/**/*.html', 'src/**/*.css', 'src/**/*.ts'], gulp.series(web, script));
+    return gulp.watch(['src/**/*.html', 'src/**/*.css', 'src/**/*.ts'], gulp.series(web, script, hammer));
 }
 
-exports.default = gulp.series(web, script);
+exports.default = gulp.series(web, script, hammer);
 exports.watch = watchSource;

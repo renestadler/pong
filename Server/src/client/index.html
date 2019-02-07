@@ -9,16 +9,13 @@
     <title>Pong Lab</title>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="hammer.js"></script>
     <script src="index.js"></script>
 
     <link type="text/css" rel="stylesheet" href="index.css">
 </head>
 <body>
-    <p>
-        Press arrow up or arrow down key and watch how they are sent to other browser windows using websockets.
-        Note that the sending browser window does not receive the message. This is by design.
-    </p>
-
-    <ul id='keys'></ul>
+    <div class="paddle1" />
+    <div class="paddle2" />
 </body>
 </html>
