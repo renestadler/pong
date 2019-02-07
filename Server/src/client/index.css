@@ -13,7 +13,7 @@ body {
     background-color: lightgray;
 }
 
-.paddle {
+.paddle1,.paddle2 {
     position: absolute;
     width: 20px;
     height: 100px;

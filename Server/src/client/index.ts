@@ -79,7 +79,8 @@ window.addEventListener('load', async () => {
     }
     if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       // Send ArrowKey message to server
-      socket.emit('ArrowUp', event.code,"hi");
+      console.log("hi");
+      socket.emit('ArrowUp',{ code: event.code, pos: currentPaddlePosition });
     }
   });
 
@@ -98,7 +99,9 @@ window.addEventListener('load', async () => {
     }
   });
   socket.on('ArrowUp', code => {
-      switch (code[0]) {
+    currentPaddlePosition=code.pos;
+    console.log(code);
+      switch (code.code) {
         case 'ArrowDown':
         case 'ArrowUp':
         stopMoving();
