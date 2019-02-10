@@ -98,8 +98,9 @@ window.addEventListener('load', async () => {
       }
     }
   });
-  socket.on('ArrowUp', code => {
+  socket.on('ArrowUp', async code => {
     currentPaddlePosition=code.pos;
+    await delay(4);
     console.log(code);
       switch (code.code) {
         case 'ArrowDown':
@@ -109,3 +110,8 @@ window.addEventListener('load', async () => {
       }
   });
 });
+
+function delay(ms: number)
+{
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
