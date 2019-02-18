@@ -16,20 +16,23 @@ app.use(express.static(path.join(__dirname, 'client')));
 const server = http.createServer(app);
 const port = 8081;
 server.listen(port, () => console.log(`Server is listening on port ${port}...`));
-const io=sio(server);
+const io = sio(server);
 // Handle the connection of new websocket clients
 io.on('connection', (socket) => {
   // Handle an ArrowKey event
-  socket.on('ArrowDown', function(code) {
-    console.log(`${code} pressed`);
+  socket.on('ArrowDown', function (code) {
 
     // Broadcast the event to all connected clients except the sender
     socket.broadcast.emit('ArrowDown', code);
   });
-  socket.on('ArrowUp', function(code) {
-    console.log(`${code} pressed`);
+  socket.on('ArrowUp', function (code) {
 
     // Broadcast the event to all connected clients except the sender
     socket.broadcast.emit('ArrowUp', code);
+  });
+  socket.on('Move', function (pos) {
+
+    // Broadcast the event to all connected clients except the sender
+    socket.broadcast.emit('Move', pos);
   });
 });

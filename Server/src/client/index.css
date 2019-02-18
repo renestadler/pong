@@ -13,10 +13,18 @@ body {
     background-color: lightgray;
 }
 
-.paddle1,.paddle2 {
+.paddle1 {
     position: absolute;
     width: 20px;
     height: 100px;
     background-color: red;
     left: 50px;
+}
+
+.paddle2 {
+    position: absolute;
+    width: 20px;
+    height: 100px;
+    background-color: red;
+    right: 50px;
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,8 +15,16 @@
 
     <link type="text/css" rel="stylesheet" href="index.css">
 </head>
+
 <body>
-    <div class="paddle1"></div>
-    <div class="paddle2"></div>
+    <div id="player" style="display:block;">
+        <button onclick="setPlayer('1')">Play as Player1</button>
+        <button onclick="setPlayer('2')">Play as Player2</button>
+    </div>
+    <div id="game" style="display:none;">
+        <div class="paddle1"></div>
+        <div class="paddle2"></div>
+    </div>
 </body>
+
 </html>
