@@ -7,6 +7,11 @@ let paddleHalfHeight;
 const socket = io();
 let currentPaddlePosition1;
 let currentPaddlePosition2;
+let ball;
+let ballSize;
+let ballHalfSize;
+let clientSize;
+let clientHalfSize;
 
 const speedPaddle1 = 1;
 const speedPaddle2 = 1;
@@ -31,13 +36,7 @@ interface Size {
 /** Represents directions  */
 enum Direction { top, right, bottom, left };
 
-// Get some information about the browser window and the ball. This information will
-// never change. So it makes sense to get it only once to make the rest of the program faster.
-const ball = document.getElementById('ball');
-const ballSize: Size = { width: ball.clientWidth, height: ball.clientHeight };
-const ballHalfSize = splitSize(ballSize, 2);
-const clientSize: Size = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
-const clientHalfSize = splitSize(clientSize, 2);
+
 
 // Listen to keydown event
 document.addEventListener('keydown', event => {
@@ -189,6 +188,11 @@ async function setPlayer(val: string) {
   paddleHalfHeight = paddleHeight / 2;
   currentPaddlePosition1 = paddle1.clientTop;
   currentPaddlePosition2 = paddle2.clientTop;
+  ball = document.getElementById('ball');
+  ballSize = { width: ball.clientWidth, height: ball.clientHeight };
+  ballHalfSize = splitSize(ballSize, 2);
+  clientSize = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
+  clientHalfSize = splitSize(clientSize, 2);
 
   player = parseInt(val);
   if (player === 1) {
@@ -238,7 +242,9 @@ async function setPlayer(val: string) {
     };
 
     // Animate ball to calculated target position
+    console.log("a");
     const borderTouch = await animateBall(ballCurrentPosition, targetBallPosition);
+    console.log("b");
 
     // Based on where the ball touched the browser window, we change the new target quadrant.
     // Note that in this solution the angle stays the same.
