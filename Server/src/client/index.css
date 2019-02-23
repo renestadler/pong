@@ -28,3 +28,10 @@ body {
     background-color: red;
     right: 50px;
 }
+
+#ball {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: red;
+}
