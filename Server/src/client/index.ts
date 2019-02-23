@@ -242,10 +242,15 @@ async function setPlayer(val: string) {
     };
 
     // Animate ball to calculated target position
-    console.log("a");
     const borderTouch = await animateBall(ballCurrentPosition, targetBallPosition);
-    console.log("b");
 
+    if (borderTouch.borderTouched > 0){
+      if (borderTouch.borderTouched === 1) {
+        console.log("Player 1 lost");
+      } else if (borderTouch.borderTouched === 2) {
+        console.log("Player 2 lost");
+      }
+    }
     // Based on where the ball touched the browser window, we change the new target quadrant.
     // Note that in this solution the angle stays the same.
     switch (borderTouch.touchDirection) {
@@ -326,7 +331,7 @@ function movePaddle(targetPosition: number, player: number): void {
    * @returns Position and direction where ball touched the border of the browser window
    *          at the end of the animation
    */
-  function animateBall(currentBallPosition: Point, targetBallPosition: Point): Promise<{touchPosition: Point, touchDirection: Direction}> {
+  function animateBall(currentBallPosition: Point, targetBallPosition: Point): Promise<{touchPosition: Point, touchDirection: Direction, borderTouched: number}> {
     // Calculate x and y distances from current to target position
     const distanceToTarget: Size = subtractPoints(targetBallPosition, currentBallPosition);
 
@@ -340,7 +345,7 @@ function movePaddle(targetPosition: number, player: number): void {
     const distancePerInterval = splitSize(distanceToTarget, distance * pixelsPerInterval);
 
     // Return a promise that will resolve when animation is done
-    return new Promise<{touchPosition: Point, touchDirection: Direction}>(res => {
+    return new Promise<{touchPosition: Point, touchDirection: Direction, borderTouched: number}>(res => {
       // Start at current ball position
       let animatedPosition: Point = currentBallPosition;
 
@@ -354,10 +359,31 @@ function movePaddle(targetPosition: number, player: number): void {
 
         // Check if the ball touches the browser window's border
         let touchDirection: Direction;
-        if ((animatedPosition.x - ballHalfSize.width) < 0) { touchDirection = Direction.left; }
+        //borderTouched returns the number of the paddle where the ball exited (so the loser of the round)
+        let borderTouched: number = -1;
+        if ((animatedPosition.x - ballHalfSize.width) < 0) { touchDirection = Direction.left; borderTouched = 1;}
         if ((animatedPosition.y - ballHalfSize.height) < 0) { touchDirection = Direction.top; }
-        if ((animatedPosition.x + ballHalfSize.width) > clientSize.width) { touchDirection = Direction.right; }
+        if ((animatedPosition.x + ballHalfSize.width) > clientSize.width) { touchDirection = Direction.right; borderTouched = 2;}
         if ((animatedPosition.y + ballHalfSize.height) > clientSize.height) { touchDirection = Direction.bottom; }
+        if ((animatedPosition.x - ballHalfSize.width) > 50 && (animatedPosition.x - ballHalfSize.width) < 70 && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition1 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition1+100)){
+          touchDirection = Direction.left;
+        }
+        if ((animatedPosition.x - ballHalfSize.width) > 50 && (animatedPosition.x - ballHalfSize.width) < 70 && (animatedPosition.y + ballHalfSize.height) === currentPaddlePosition1){
+          touchDirection = Direction.top;
+        }
+        if ((animatedPosition.x - ballHalfSize.width) > 50 && (animatedPosition.x - ballHalfSize.width) < 70 && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition1+100)){
+          touchDirection = Direction.bottom;
+        }
+
+        if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 50) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - 70) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition2 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition2+100)){
+          touchDirection = Direction.right;
+        }
+        if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 50) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - 70) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2)){
+          touchDirection = Direction.top;
+        }
+        if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 50) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - 70) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2+100)){
+          touchDirection = Direction.bottom;
+        }
 
         if (touchDirection !== undefined) {
           // Ball touches border -> stop animation
