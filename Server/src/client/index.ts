@@ -388,7 +388,7 @@ function movePaddle(targetPosition: number, player: number): void {
         if (touchDirection !== undefined) {
           // Ball touches border -> stop animation
           clearInterval(interval);
-          res({ touchPosition: animatedPosition, touchDirection: touchDirection });
+          res({ touchPosition: animatedPosition, touchDirection: touchDirection, borderTouched:borderTouched });
         }
       }, 4);
     });
