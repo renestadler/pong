@@ -17,13 +17,50 @@
 
 <body>
     <div id="game" style="display:none;">
-        
+        <h1>Pong - Game</h1>
+        <h2 id="gameTitle"></h2>
+        <br>
+        <p>Points to win: 
+        <select id="pointsToWin">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+        </select></p>
+
+        <p>Difficulty: 
+        <select id="difficulty">
+            <option value="e">Easy</option>
+            <option value="n">Normal</option>
+            <option value="h">Hard</option>
+        </select></p>
+
+        <br>
+        <h3>Players online:</h3>
+        <p id="pl1">Player 1: </p>
+        <p id="pl2">Player 2: </p>
+        <br>
+
+        <button onclick="startGame()">Start Game</button>
     </div>
     <div id="lobby" style="display:none;">
         <h1>Pong - Lobby</h1>
-        <div id="pName">
-        </div><button id="regisBtn" onclick="loadRegistration()">Change Name</button>
+        <div id="pName"></div>
+        <button id="regisBtn" onclick="loadRegistration()">Change Name</button>
         <br><br>
+        <p id="gName">Enter the name of the new game (required to create game): 
+        <input id="inputGameName" type="text" name="inputGameName" required></input></p>
         <button class="normalBtn" onclick="cGame()">Create Game</button>
         <br><br>
         <div id="activeGames"></div>
