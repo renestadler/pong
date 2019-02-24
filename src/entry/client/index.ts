@@ -106,7 +106,7 @@ document.addEventListener('keyup', event => {
 });
 
 
-socket.on('Move', async code => {
+clientSocket.on('Move', async code => {
   if (player === 1) {
     currentPaddlePosition2 = code.pos * heightFactor;
     paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
@@ -117,7 +117,7 @@ socket.on('Move', async code => {
   }
 });
 
-socket.on("Options", async code => {
+clientSocket.on("Options", async code => {
   heightFactor = document.documentElement.clientHeight / code.client.height;
   widthFactor = document.documentElement.clientWidth / code.client.width;
   ballSize = { width: code.ball.width * widthFactor, height: code.ball.height * heightFactor };
@@ -135,22 +135,22 @@ socket.on("Options", async code => {
   paddle2.style.setProperty('height', paddleSize.height + "px");
 });
 
-socket.on("Wait", async code => {
+clientSocket.on("Wait", async code => {
   document.getElementById("winner").innerText = "Game starts in " + code;
 });
 
-socket.on("Prepare", async code => {
+clientSocket.on("Prepare", async code => {
   let startPos: Point = { x: code.startPos.x * widthFactor, y: code.startPos.y * heightFactor };
   document.getElementById("winner").innerText = "";
   moveBall(startPos);
 });
 
-socket.on("BallMove", async code => {
+clientSocket.on("BallMove", async code => {
   let pos: Point = { x: code.x * widthFactor, y: code.y * heightFactor };
   moveBall(pos);
 });
 
-socket.on("Point", async code => {
+clientSocket.on("Point", async code => {
   switch (code.pId) {
     case 1:
       document.getElementById("pointsPl1").innerText = code.points;
@@ -161,7 +161,7 @@ socket.on("Point", async code => {
   }
 });
 
-socket.on("Win", async code => {
+clientSocket.on("Win", async code => {
   switch (code.pId) {
     case 1:
       document.getElementById("winner").innerText = "Player 1("+code.name+") won!";
@@ -213,10 +213,10 @@ async function setPlayer(val: string) {
   }
   while (true) {
     if (player === 1) {
-      socket.emit('Move', { pos: currentPaddlePosition1 / heightFactor, paddleNum: 1 });
+      clientSocket.emit('Move', { pos: currentPaddlePosition1 / heightFactor, paddleNum: 1 });
     }
     else if (player === 2) {
-      socket.emit('Move', { pos: currentPaddlePosition2 / heightFactor, paddleNum: 2 });
+      clientSocket.emit('Move', { pos: currentPaddlePosition2 / heightFactor, paddleNum: 2 });
     }
     await delay(16);
   }

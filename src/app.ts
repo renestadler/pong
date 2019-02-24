@@ -83,14 +83,19 @@ io.on('connection', (socket) => {
       curGame = toJoin[0];
     }
 
-    socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
-    socket.emit('Wait', 3);
+    curGame.p1Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
+    curGame.p2Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
+    curGame.p1Socket.emit('Wait', 3);
+    curGame.p2Socket.emit('Wait', 3);
     await delay(1000);
-    socket.emit('Wait', 2);
+    curGame.p1Socket.emit('Wait', 2);
+    curGame.p2Socket.emit('Wait', 2);
     await delay(1000);
-    socket.emit('Wait', 1);
+    curGame.p1Socket.emit('Wait', 1);
+    curGame.p2Socket.emit('Wait', 1);
     await delay(1000);
-    socket.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
+    curGame.p1Socket.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
+    curGame.p2Socket.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
 
     let ballCurrentPosition: Point = { x: clientHalfSize.width, y: clientHalfSize.height };
 
@@ -120,14 +125,14 @@ io.on('connection', (socket) => {
       if (borderTouch.borderTouched > 0) {
         if (borderTouch.borderTouched === 1) {
           curGame.p2points++;
-          curGame.p1Socket.emit("Point",{pId:2,points:curGame.p2points});
-          //curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
+          curGame.p1Socket.emit("Point", { pId: 2, points: curGame.p2points });
+          curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
           //Player 1 lost
         } else if (borderTouch.borderTouched === 2) {
           //Player 2 lost
           curGame.p1points++;
-          curGame.p1Socket.emit("Point",{pId:1,points:curGame.p1points});
-          //curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
+          curGame.p1Socket.emit("Point", { pId: 1, points: curGame.p1points });
+          curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
         }
         //TODO: send to client
 
@@ -140,15 +145,15 @@ io.on('connection', (socket) => {
         if (curGame.p1points >= curGame.pointsToWin) {
           //Player 1 won
           won = true;
-          curGame.status=GameStatus.ENDED;
-          curGame.p1Socket.emit("Win",{pId:1,points:curGame.p1Name});
-          //curGame.p2Socket.emit("Win",{pId:1,points:curGame.p1Name});
+          curGame.status = GameStatus.ENDED;
+          curGame.p1Socket.emit("Win", { pId: 1, points: curGame.p1Name });
+          curGame.p2Socket.emit("Win",{pId:1,points:curGame.p1Name});
         } else if (curGame.p2points >= curGame.pointsToWin) {
           //Player 2 won
           won = true;
-          curGame.status=GameStatus.ENDED;
-          curGame.p1Socket.emit("Win",{pId:2,points:curGame.p2Name});
-          //curGame.p2Socket.emit("Win",{pId:2,points:curGame.p2Name});
+          curGame.status = GameStatus.ENDED;
+          curGame.p1Socket.emit("Win", { pId: 2, points: curGame.p2Name });
+          curGame.p2Socket.emit("Win",{pId:2,points:curGame.p2Name});
         }
       } else {
         // Based on where the ball touched the browser window, we change the new target quadrant.
@@ -181,23 +186,11 @@ io.on('connection', (socket) => {
   });
   // Handle an ArrowKey event
 
-
-  //Deprecated - use TODO: sync all x seconds
   socket.on('Move', function (pos) {
     pos.paddleNum === 1 ? currentPaddlePosition1 = pos.pos :
       currentPaddlePosition2 = pos.pos;
     socket.broadcast.emit('Move', pos);
   });
-
-  socket.on('ArrowUp', function (code) {
-    socket.broadcast.emit('ArrowUp', code);
-  });
-
-  socket.on('ArrowDown', function (code) {
-    socket.broadcast.emit('ArrowDown', code);
-  });
-
-
 
   //Lobby stuff
 
@@ -273,6 +266,7 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point, game
       //moveBall(animatedPosition);
 
       game.p1Socket.emit("BallMove", animatedPosition);
+      game.p2Socket.emit("BallMove", animatedPosition);
 
       console.log(currentPaddlePosition1)
       // Check if the ball touches the browser window's border
