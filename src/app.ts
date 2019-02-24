@@ -82,22 +82,16 @@ io.on('connection', (socket) => {
       }
       curGame = toJoin[0];
     }
-    curGame.p1Socket.emit('Start');
-    curGame.p2Socket.emit('Start');
+    sendToAll('Start', '', curGame);
 
-    curGame.p1Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
-    curGame.p2Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
-    curGame.p1Socket.emit('Wait', 3);
-    curGame.p2Socket.emit('Wait', 3);
+    sendToAll('Options', { ball: ballSize, client: clientSize, paddle: paddleSize }, curGame);
+    sendToAll('Wait', 3, curGame);
     await delay(1000);
-    curGame.p1Socket.emit('Wait', 2);
-    curGame.p2Socket.emit('Wait', 2);
+    sendToAll('Wait', 2, curGame);
     await delay(1000);
-    curGame.p1Socket.emit('Wait', 1);
-    curGame.p2Socket.emit('Wait', 1);
+    sendToAll('Wait', 1, curGame);
     await delay(1000);
-    curGame.p1Socket.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
-    curGame.p2Socket.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
+    sendToAll('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height }, curGame);
 
     let ballCurrentPosition: Point = { x: clientHalfSize.width, y: clientHalfSize.height };
 
@@ -127,14 +121,12 @@ io.on('connection', (socket) => {
       if (borderTouch.borderTouched > 0) {
         if (borderTouch.borderTouched === 1) {
           curGame.p2points++;
-          curGame.p1Socket.emit("Point", { pId: 2, points: curGame.p2points });
-          curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
+          sendToAll('Point', { pId: 2, points: curGame.p2points }, curGame);
           //Player 1 lost
         } else if (borderTouch.borderTouched === 2) {
           //Player 2 lost
           curGame.p1points++;
-          curGame.p1Socket.emit("Point", { pId: 1, points: curGame.p1points });
-          curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
+          sendToAll('Point', { pId: 1, points: curGame.p1points }, curGame);
         }
         //TODO: send to client
 
@@ -148,14 +140,12 @@ io.on('connection', (socket) => {
           //Player 1 won
           won = true;
           curGame.status = GameStatus.ENDED;
-          curGame.p1Socket.emit("Win", { pId: 1, points: curGame.p1Name });
-          curGame.p2Socket.emit("Win",{pId:1,points:curGame.p1Name});
+          sendToAll('Win', { pId: 1, points: curGame.p1Name }, curGame);
         } else if (curGame.p2points >= curGame.pointsToWin) {
           //Player 2 won
           won = true;
           curGame.status = GameStatus.ENDED;
-          curGame.p1Socket.emit("Win", { pId: 2, points: curGame.p2Name });
-          curGame.p2Socket.emit("Win",{pId:2,points:curGame.p2Name});
+          sendToAll('Win', { pId: 2, points: curGame.p2Name }, curGame);
         }
       } else {
         // Based on where the ball touched the browser window, we change the new target quadrant.
@@ -221,8 +211,8 @@ io.on('connection', (socket) => {
     }
     toJoin[0].p2Name = gameStuff.pName;
     toJoin[0].p2Socket = socket;
-    socket.emit('Join', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status}); 
-    toJoin[0].p1Socket.emit('Join', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status}); 
+    socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status });
+    toJoin[0].p1Socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status });
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
 
@@ -233,7 +223,7 @@ io.on('connection', (socket) => {
       return;
     }
     toJoin[0].watching = gameStuff.pName;
-    socket.emit('Watch', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName1: toJoin[0].p1Name, playerName2: toJoin[0].p2Name, status: toJoin[0].status}); 
+    socket.emit('Watch', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName1: toJoin[0].p1Name, playerName2: toJoin[0].p2Name, status: toJoin[0].status });
   });
 
   socket.on('Clear', function (playerId) {
@@ -268,8 +258,7 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point, game
       // Move the ball to the new position
       //moveBall(animatedPosition);
 
-      game.p1Socket.emit("BallMove", animatedPosition);
-      game.p2Socket.emit("BallMove", animatedPosition);
+      sendToAll('BallMove', animatedPosition, game);
 
       console.log(currentPaddlePosition1)
       // Check if the ball touches the browser window's border
@@ -331,4 +320,12 @@ function splitSize(s: Size, divider: number): Size {
     width: s.width / divider,
     height: s.height / divider
   };
+}
+
+function sendToAll(topic: string, val: any, game: MyGame) {
+  game.p1Socket.emit(topic, val);
+  game.p2Socket.emit(topic, val);
+  for (let i = 0; i < game.watching.length; i++) {
+    game.watching[i].emit(topic, val);
+  }
 }
