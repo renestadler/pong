@@ -1,4 +1,4 @@
 function helloWorld(){
-    hello();
-    console.log("hello");
+    (<any>window.parent).hello();
+    console.log("hello1");
 }
