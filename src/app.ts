@@ -59,11 +59,13 @@ interface MyGameDto {
   p2Name: string;
 }
 
-const ballSize: Size = { width: 2, height: 2 };
+const ballSize: Size = { width: 1, height: 1 };
 const ballHalfSize: Size = { width: 1, height: 1 };
 const clientSize: Size = { width: 160, height: 90 };
 const clientHalfSize: Size = { width: 80, height: 45 };
-const paddleSize: Size = { width: 16, height: 4 };
+const paddleSize: Size = { width: 2, height: 16 };
+let currentPaddlePosition1 = 0;
+let currentPaddlePosition2 = 0;
 
 // Handle the connection of new websocket clients
 io.on('connection', (socket) => {
@@ -71,7 +73,7 @@ io.on('connection', (socket) => {
     let toJoin = games.filter(game => game.id === gameId);
     let curGame: MyGame;
     if (gameId === "futureGameID") {
-      curGame = { status: GameStatus.RUNNING, id: 0, pointsToWin:2,name: null, p1Name: null, p1Socket: null, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] };
+      curGame = { status: GameStatus.RUNNING, id: 0, pointsToWin: 2, name: null, p1Name: null, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] };
     } else {
       if (toJoin.length === 0) {
         socket.emit('Join', "Error: Game not found");
@@ -81,17 +83,21 @@ io.on('connection', (socket) => {
       curGame = toJoin[0];
     }
 
-    socket.broadcast.emit('Wait', 3);
+    curGame.p1Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
+    curGame.p2Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
+    curGame.p1Socket.emit('Wait', 3);
+    curGame.p2Socket.emit('Wait', 3);
     await delay(1000);
-    socket.broadcast.emit('Wait', 2);
+    curGame.p1Socket.emit('Wait', 2);
+    curGame.p2Socket.emit('Wait', 2);
     await delay(1000);
-    socket.broadcast.emit('Wait', 1);
+    curGame.p1Socket.emit('Wait', 1);
+    curGame.p2Socket.emit('Wait', 1);
     await delay(1000);
-    socket.broadcast.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
+    curGame.p1Socket.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
+    curGame.p2Socket.emit('Prepare', { startPos: { x: clientHalfSize.width, y: clientHalfSize.height }, ballSize: ballSize.height });
 
     let ballCurrentPosition: Point = { x: clientHalfSize.width, y: clientHalfSize.height };
-
-    //moveBall(ballCurrentPosition);//TODO: Change to Client Side
 
     // Calculate the random angle that the ball should initially travel.
     // Should be an angle between 27.5 and 45 DEG (=PI/8 and PI/4 RAD)
@@ -115,15 +121,18 @@ io.on('connection', (socket) => {
         y: ballCurrentPosition.y + Math.tan(angle) * Math.abs(targetX - ballCurrentPosition.x) * ((quadrant === 0 || quadrant === 3) ? -1 : 1)
       };
       // Animate ball to calculated target position
-      //TODO:
-      const borderTouch = await animateBall(ballCurrentPosition, targetBallPosition);
+      const borderTouch = await animateBall(ballCurrentPosition, targetBallPosition, curGame);
       if (borderTouch.borderTouched > 0) {
         if (borderTouch.borderTouched === 1) {
           curGame.p2points++;
+          curGame.p1Socket.emit("Point", { pId: 2, points: curGame.p2points });
+          curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
           //Player 1 lost
         } else if (borderTouch.borderTouched === 2) {
           //Player 2 lost
           curGame.p1points++;
+          curGame.p1Socket.emit("Point", { pId: 1, points: curGame.p1points });
+          curGame.p2Socket.emit("Point",{pId:2,points:curGame.p2points});
         }
         //TODO: send to client
 
@@ -136,13 +145,15 @@ io.on('connection', (socket) => {
         if (curGame.p1points >= curGame.pointsToWin) {
           //Player 1 won
           won = true;
-          document.getElementById("winner").innerText = "Player 1 won!";
-          //TODO: Go back to lobby
+          curGame.status = GameStatus.ENDED;
+          curGame.p1Socket.emit("Win", { pId: 1, points: curGame.p1Name });
+          curGame.p2Socket.emit("Win",{pId:1,points:curGame.p1Name});
         } else if (curGame.p2points >= curGame.pointsToWin) {
           //Player 2 won
           won = true;
-          document.getElementById("winner").innerText = "Player 2 won!";
-          //TODO: Go back to lobby
+          curGame.status = GameStatus.ENDED;
+          curGame.p1Socket.emit("Win", { pId: 2, points: curGame.p2Name });
+          curGame.p2Socket.emit("Win",{pId:2,points:curGame.p2Name});
         }
       } else {
         // Based on where the ball touched the browser window, we change the new target quadrant.
@@ -175,21 +186,11 @@ io.on('connection', (socket) => {
   });
   // Handle an ArrowKey event
 
-
-  //Deprecated - use TODO: sync all x seconds
   socket.on('Move', function (pos) {
+    pos.paddleNum === 1 ? currentPaddlePosition1 = pos.pos :
+      currentPaddlePosition2 = pos.pos;
     socket.broadcast.emit('Move', pos);
   });
-
-  socket.on('ArrowUp', function (code) {
-    socket.broadcast.emit('ArrowUp', code);
-  });
-
-  socket.on('ArrowDown', function (code) {
-    socket.broadcast.emit('ArrowDown', code);
-  });
-
-
 
   //Lobby stuff
 
@@ -202,8 +203,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('Create', function (gameStuff) {
-    games.push({ status: GameStatus.LOBBY, id: games.length, pointsToWin:2, name: gameStuff.gameName, p1Name: gameStuff.playerName, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] });
-    socket.emit('Created', games.length - 1);
+    games.push({ status: GameStatus.LOBBY, id: games.length, pointsToWin: 2, name: gameStuff.gameName, p1Name: gameStuff.playerName, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] });
+    socket.emit('Create', games.length - 1);
     socket.broadcast.emit('Created', games.length - 1);
   });
 
@@ -218,7 +219,7 @@ io.on('connection', (socket) => {
     }
     toJoin[0].p2Name = gameStuff.pName;
     toJoin[0].p2Socket = socket;
-    socket.emit('Join', gameStuff.gameId);
+    socket.emit('Join', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status}); 
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
 
@@ -229,7 +230,7 @@ io.on('connection', (socket) => {
       return;
     }
     toJoin[0].watching = gameStuff.pName;
-    socket.emit('Watching', gameStuff.gameId);
+    socket.emit('Watch', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName1: toJoin[0].p1Name, playerName2: toJoin[0].p2Name, status: toJoin[0].status}); 
   });
 
   socket.on('Clear', function (playerId) {
@@ -240,7 +241,7 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function animateBall(currentBallPosition: Point, targetBallPosition: Point): Promise<{ touchPosition: Point, touchDirection: Direction, borderTouched: number }> {
+function animateBall(currentBallPosition: Point, targetBallPosition: Point, game: MyGame): Promise<{ touchPosition: Point, touchDirection: Direction, borderTouched: number }> {
 
   // Calculate x and y distances from current to target position
   const distanceToTarget: Size = subtractPoints(targetBallPosition, currentBallPosition);
@@ -259,13 +260,15 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point): Pro
 
     // Move point every 16ms
     const interval = setInterval(() => {
-      let currentPaddlePosition1 = 0;
-      let currentPaddlePosition2 = 0;
       // Move animated position by the distance it has to travel per interval
       animatedPosition = movePoint(animatedPosition, distancePerInterval);
       // Move the ball to the new position
       //moveBall(animatedPosition);
 
+      game.p1Socket.emit("BallMove", animatedPosition);
+      game.p2Socket.emit("BallMove", animatedPosition);
+
+      console.log(currentPaddlePosition1)
       // Check if the ball touches the browser window's border
       let touchDirection: Direction;
       //borderTouched returns the number of the paddle where the ball exited (so the loser of the round)
@@ -274,23 +277,23 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point): Pro
       if ((animatedPosition.y - ballHalfSize.height) < 0) { touchDirection = Direction.top; }
       if ((animatedPosition.x + ballHalfSize.width) > clientSize.width) { touchDirection = Direction.right; borderTouched = 2; }
       if ((animatedPosition.y + ballHalfSize.height) > clientSize.height) { touchDirection = Direction.bottom; }
-      if ((animatedPosition.x - ballHalfSize.width) > 12 && (animatedPosition.x - ballHalfSize.width) < (12 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition1 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition1 + paddleSize.height)) {
+      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition1 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition1 + paddleSize.height)) {
         touchDirection = Direction.left;
       }
-      if ((animatedPosition.x - ballHalfSize.width) > 12 && (animatedPosition.x - ballHalfSize.width) < (12 + paddleSize.width)&& (animatedPosition.y + ballHalfSize.height) === currentPaddlePosition1) {
+      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) === currentPaddlePosition1) {
         touchDirection = Direction.top;
       }
-      if ((animatedPosition.x - ballHalfSize.width) > 12 && (animatedPosition.x - ballHalfSize.width) < (12 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition1 + paddleSize.height)) {
+      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition1 + paddleSize.height)) {
         touchDirection = Direction.bottom;
       }
 
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 12) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (12 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition2 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition2 + paddleSize.height)) {
+      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition2 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition2 + paddleSize.height)) {
         touchDirection = Direction.right;
       }
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 12) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (12 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2)) {
+      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2)) {
         touchDirection = Direction.top;
       }
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 12) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (12 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2 + 100)) {
+      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2 + 100)) {
         touchDirection = Direction.bottom;
       }
 

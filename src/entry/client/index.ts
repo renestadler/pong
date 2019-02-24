@@ -12,7 +12,9 @@ let ballSize;
 let ballHalfSize;
 let clientSize;
 let clientHalfSize;
-
+let paddleSize;
+let widthFactor;
+let heightFactor;
 const speedPaddle1 = 1;
 const speedPaddle2 = 1;
 
@@ -93,10 +95,6 @@ document.addEventListener('keyup', event => {
         stopMoving(player);
         break;
     }
-    if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
-      // Send ArrowKey message to server
-      clientSocket.emit('ArrowUp', { code: event.code, pos: currentPaddlePosition1 });
-    }
   } else if (player === 2) {
     switch (event.code) {
       case 'ArrowDown':
@@ -104,73 +102,73 @@ document.addEventListener('keyup', event => {
         stopMoving(player);
         break;
     }
-    if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
-      // Send ArrowKey message to server
-      clientSocket.emit('ArrowUp', { code: event.code, pos: currentPaddlePosition2 });
-    }
   }
 });
 
-clientSocket.on('ArrowDown', code => {
-  if (player === 1) {
-    if (!intervalPaddle2) {
-      switch (code) {
-        case 'ArrowDown':
-          directionPaddle2 = speedPaddle2;
-          startMoving(2);
-          break;
-        case 'ArrowUp':
-          directionPaddle2 = speedPaddle2 * -1;
-          startMoving(2);
-          break;
-      }
-    }
-  } else if (player === 2) {
-    if (!intervalPaddle1) {
-      switch (code) {
-        case 'ArrowDown':
-          directionPaddle1 = speedPaddle1;
-          startMoving(1);
-          break;
-        case 'ArrowUp':
-          directionPaddle1 = speedPaddle1 * -1;
-          startMoving(1);
-          break;
-      }
-    }
-  }
-});
 
-clientSocket.on('ArrowUp', async code => {
-  if (player === 1) {
-    currentPaddlePosition2 = code.pos;
-    await delay(4);
-    switch (code.code) {
-      case 'ArrowDown':
-      case 'ArrowUp':
-        stopMoving(2);
-        break;
-    }
-  }
-  else if (player === 2) {
-    currentPaddlePosition1 = code.pos;
-    await delay(4);
-    switch (code.code) {
-      case 'ArrowDown':
-      case 'ArrowUp':
-        stopMoving(1);
-        break;
-    }
-  }
-});
 clientSocket.on('Move', async code => {
   if (player === 1) {
-    currentPaddlePosition2 = code.pos;
+    currentPaddlePosition2 = code.pos * heightFactor;
     paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
   }
   else if (player === 2) {
-    currentPaddlePosition1 = code.pos;
+    currentPaddlePosition1 = code.pos * heightFactor;
     paddle1.style.setProperty('top', `${currentPaddlePosition1}px`);
+  }
+});
+
+clientSocket.on("Options", async code => {
+  heightFactor = document.documentElement.clientHeight / code.client.height;
+  widthFactor = document.documentElement.clientWidth / code.client.width;
+  ballSize = { width: code.ball.width * widthFactor, height: code.ball.height * heightFactor };
+  paddleSize = { width: code.paddle.width * widthFactor, height: code.paddle.height * heightFactor };
+  paddleHeight = paddleSize.height;
+  paddleHalfHeight = paddleHeight / 2;
+  ballHalfSize = splitSize(ballSize, 2);
+  clientSize = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
+  clientHalfSize = splitSize(clientSize, 2);
+  ball.style.setProperty('width', ballSize.width + "px");
+  ball.style.setProperty('height', ballSize.height + "px");
+  paddle1.style.setProperty('width', paddleSize.width + "px");
+  paddle1.style.setProperty('height', paddleSize.height + "px")
+  paddle2.style.setProperty('width', paddleSize.width + "px");
+  paddle2.style.setProperty('height', paddleSize.height + "px");
+});
+
+clientSocket.on("Wait", async code => {
+  document.getElementById("winner").innerText = "Game starts in " + code;
+});
+
+clientSocket.on("Prepare", async code => {
+  let startPos: Point = { x: code.startPos.x * widthFactor, y: code.startPos.y * heightFactor };
+  document.getElementById("winner").innerText = "";
+  moveBall(startPos);
+});
+
+clientSocket.on("BallMove", async code => {
+  let pos: Point = { x: code.x * widthFactor, y: code.y * heightFactor };
+  moveBall(pos);
+});
+
+clientSocket.on("Point", async code => {
+  switch (code.pId) {
+    case 1:
+      document.getElementById("pointsPl1").innerText = code.points;
+      break;
+    case 2:
+      document.getElementById("pointsPl2").innerText = code.points;
+      break;
+  }
+});
+
+clientSocket.on("Win", async code => {
+  switch (code.pId) {
+    case 1:
+      document.getElementById("winner").innerText = "Player 1("+code.name+") won!";
+      break;
+    case 2:
+    document.getElementById("winner").innerText = "Player 2("+code.name+") won!";
+      break;
   }
 });
 
@@ -203,7 +201,6 @@ async function setPlayer(val: string) {
     hammertime.on('pan', ev => {
       // Put center of paddle to the center of the user's finger
       movePaddle(ev.center.y - paddleHalfHeight, player);
-      clientSocket.emit('Move', { pos: currentPaddlePosition1 });
     });
   }
   else if (player === 2) {
@@ -212,94 +209,17 @@ async function setPlayer(val: string) {
     hammertime.on('pan', ev => {
       // Put center of paddle to the center of the user's finger
       movePaddle(ev.center.y - paddleHalfHeight, player);
-      clientSocket.emit('Move', { pos: currentPaddlePosition2 });
     });
   }
-
-  // Move ball to center of the screen
-  let ballCurrentPosition: Point = { x: clientHalfSize.width, y: clientHalfSize.height };
-  moveBall(ballCurrentPosition);
-
-  // Calculate the random angle that the ball should initially travel.
-  // Should be an angle between 27.5 and 45 DEG (=PI/8 and PI/4 RAD)
-  let angle = Math.PI / 8 + Math.random() * Math.PI / 8;
-
-  // Calculate the random quadrant into which the ball should initially travel.
-  // 0 = upper right, 1 = lower right, 2 = lower left, 3 = upper left
-  let quadrant = Math.floor(Math.random() * 4);
-
-  let won: boolean = false;
-  do {
-    // Calculate target.
-    // X-coordinate iw either right or left border of browser window (depending on
-    //              target quadrant)
-    // y-coordinate is calculated using tangens angle function of angle
-    //              (note: tan(angle) = delta-y / delta-x). The sign depends on
-    //              the target quadrant)
-    const targetX = (quadrant === 0 || quadrant === 1) ? clientSize.width - ballSize.width : 0;
-    const targetBallPosition: Point = {
-      x: targetX,
-      y: ballCurrentPosition.y + Math.tan(angle) * Math.abs(targetX - ballCurrentPosition.x) * ((quadrant === 0 || quadrant === 3) ? -1 : 1)
-    };
-
-    // Animate ball to calculated target position
-    const borderTouch = await animateBall(ballCurrentPosition, targetBallPosition);
-
-    if (borderTouch.borderTouched > 0) {
-      if (borderTouch.borderTouched === 1) {
-        //Player 1 lost
-        pointsPlayer2++;
-      } else if (borderTouch.borderTouched === 2) {
-        //Player 2 lost
-        pointsPlayer1++;
-      }
-      document.getElementById("pointsPl1").innerText = pointsPlayer1 + "";
-      document.getElementById("pointsPl2").innerText = pointsPlayer2 + "";
-
-      ballCurrentPosition.x = clientHalfSize.width;
-      ballCurrentPosition.y = clientHalfSize.height;
-      angle = Math.PI / 8 + Math.random() * Math.PI / 8;
-      await delay(1000);
-
-      if (pointsPlayer1 >= pointsToWin) {
-        //Player 1 won
-        won = true;
-        document.getElementById("winner").innerText = "Player 1 won!";
-        //TODO: Go back to lobby
-      } else if (pointsPlayer2 >= pointsToWin) {
-        //Player 2 won
-        won = true;
-        document.getElementById("winner").innerText = "Player 2 won!";
-        //TODO: Go back to lobby
-      }
-    } else {
-      // Based on where the ball touched the browser window, we change the new target quadrant.
-      // Note that in this solution the angle stays the same.
-      switch (borderTouch.touchDirection) {
-        case Direction.left:
-          quadrant = (quadrant === 2) ? 1 : 0;
-          break;
-        case Direction.right:
-          quadrant = (quadrant === 0) ? 3 : 2;
-          break;
-        case Direction.top:
-          quadrant = (quadrant === 0) ? 1 : 2;
-          break;
-        case Direction.bottom:
-          quadrant = (quadrant === 2) ? 3 : 0;
-          break;
-        default:
-          throw new Error('Invalid direction, should never happen');
-      }
-
-      // The touch position is the new current position of the ball.
-      // Note that we fix the position here slightly in case a small piece of the ball has reached an area
-      // outside of the visible browser window.
-      ballCurrentPosition.x = Math.min(Math.max(borderTouch.touchPosition.x - ballHalfSize.width, 0) + ballHalfSize.width, clientSize.width);
-      ballCurrentPosition.y = Math.min(Math.max(borderTouch.touchPosition.y - ballHalfSize.height, 0) + ballHalfSize.height, clientSize.height);
+  while (true) {
+    if (player === 1) {
+      clientSocket.emit('Move', { pos: currentPaddlePosition1 / heightFactor, paddleNum: 1 });
     }
-  } while (!won);
-
+    else if (player === 2) {
+      clientSocket.emit('Move', { pos: currentPaddlePosition2 / heightFactor, paddleNum: 2 });
+    }
+    await delay(16);
+  }
 }
 
 /** Helper function that starts movement when keydown happens */

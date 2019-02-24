@@ -15,24 +15,18 @@ body {
 
 .paddle1 {
     position: absolute;
-    width: 20px;
-    height: 100px;
     background-color: red;
-    left: 50px;
+    left: 5%;
 }
 
 .paddle2 {
     position: absolute;
-    width: 20px;
-    height: 100px;
     background-color: red;
-    right: 50px;
+    right: 5%;
 }
 
 #ball {
     position: absolute;
-    width: 10px;
-    height: 10px;
     background-color: red;
 }
 
