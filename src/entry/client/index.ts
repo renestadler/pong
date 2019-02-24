@@ -4,7 +4,7 @@ let paddle1;
 let paddle2;
 let paddleHeight;
 let paddleHalfHeight;
-const socket = io();
+const clientSocket = io();
 let currentPaddlePosition1;
 let currentPaddlePosition2;
 let ball;
@@ -64,7 +64,7 @@ document.addEventListener('keydown', event => {
     }
     if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       // Send ArrowKey message to server
-      socket.emit('ArrowDown', event.code);
+      clientSocket.emit('ArrowDown', event.code);
     }
   } else if (player === 2) {
     if (!intervalPaddle2) {
@@ -81,7 +81,7 @@ document.addEventListener('keydown', event => {
     }
     if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       // Send ArrowKey message to server
-      socket.emit('ArrowDown', event.code);
+      clientSocket.emit('ArrowDown', event.code);
     }
   }
 });
@@ -192,7 +192,7 @@ async function setPlayer(val: string) {
   clientHalfSize = splitSize(clientSize, 2);
   document.getElementById("pointsPl1").innerText = "0";
   document.getElementById("pointsPl2").innerText = "0";
-  socket.emit('Start', 'futureGameID');
+  clientSocket.emit('Start', 'futureGameID');
 
   player = parseInt(val);
   if (player === 1) {
