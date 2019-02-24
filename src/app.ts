@@ -13,7 +13,15 @@ server.listen(port, () => console.log(`Server is listening on port ${port}...`))
 const io = sio(server);
 
 let games: MyGame[];
+
+enum GameStatus {
+  LOBBY,
+  RUNNING,
+  ENDED
+}
+
 interface MyGame {
+  status: GameStatus;
   id: number;
   name: string;
   p1Name: string;
@@ -24,13 +32,12 @@ interface MyGame {
   p2points: number;
   watching: sio.Socket[];
 }
+
 interface MyGameDto {
   id: number;
   name: string;
-  p1Name: string;
-  p2Name: string;
-  p1points: number;
-  p2points: number;
+  numPlayers: number;
+  status: GameStatus;
 }
 
 
@@ -41,9 +48,36 @@ io.on('connection', (socket) => {
     // Broadcast the event to all connected clients except the sender
     socket.broadcast.emit('Move', gameId);
   });
+  // Handle an ArrowKey event
+  
+
+  //Deprecated - use TODO: sync all x seconds
+  socket.on('Move', function (pos) {
+    socket.broadcast.emit('Move', pos);
+  }); 
+
+  socket.on('ArrowUp', function (code) {
+    socket.broadcast.emit('ArrowUp', code);
+  });
+
+  socket.on('ArrowDown', function (code) {
+    socket.broadcast.emit('ArrowDown', code);
+  });
+
+
+
+  //Lobby stuff
+  
+  socket.on('Games', function (gameStuff) {
+    let allGames:MyGameDto[]=[];
+    for(let i=0;i<games.length;i++){
+      allGames.push({id:games[i].id,name:games[i].name,numPlayers:games[i].p2Name!==null?2:1,status:games[i].status});
+    }
+    socket.emit('Games', allGames);
+  });
 
   socket.on('Create', function (gameStuff) {
-    games.push({ id: games.length,name:gameStuff.gameName, p1Name: gameStuff.playerName, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] });
+    games.push({ status:GameStatus.LOBBY, id: games.length,name:gameStuff.gameName, p1Name: gameStuff.playerName, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] });
     socket.emit('Created', games.length - 1);
     socket.broadcast.emit('Created', games.length - 1);
   });
@@ -71,22 +105,5 @@ io.on('connection', (socket) => {
     }
     toJoin[0].watching = gameStuff.pName;
     socket.emit('Watching', gameStuff.gameId);
-  });
-
-  // Handle an ArrowKey event
-  socket.on('ArrowDown', function (code) {
-
-    // Broadcast the event to all connected clients except the sender
-    socket.broadcast.emit('ArrowDown', code);
-  });
-  socket.on('ArrowUp', function (code) {
-
-    // Broadcast the event to all connected clients except the sender
-    socket.broadcast.emit('ArrowUp', code);
-  });
-  socket.on('Move', function (pos) {
-
-    // Broadcast the event to all connected clients except the sender
-    socket.broadcast.emit('Move', pos);
   });
 });
