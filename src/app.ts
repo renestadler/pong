@@ -219,7 +219,7 @@ io.on('connection', (socket) => {
     }
     toJoin[0].p2Name = gameStuff.pName;
     toJoin[0].p2Socket = socket;
-    socket.emit('Join', gameStuff.gameId);
+    socket.emit('Join', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status}); 
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
 
@@ -230,7 +230,7 @@ io.on('connection', (socket) => {
       return;
     }
     toJoin[0].watching = gameStuff.pName;
-    socket.emit('Watching', gameStuff.gameId);
+    socket.emit('Watch', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName1: toJoin[0].p1Name, playerName2: toJoin[0].p2Name, status: toJoin[0].status}); 
   });
 
   socket.on('Clear', function (playerId) {
