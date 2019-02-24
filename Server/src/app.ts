@@ -12,7 +12,7 @@ import { Socket } from 'dgram';
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'client')));
+app.use(express.static(path.join(__dirname,'entry')));
 const server = http.createServer(app);
 const port = 8081;
 server.listen(port, () => console.log(`Server is listening on port ${port}...`));
