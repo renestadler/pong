@@ -194,7 +194,7 @@ async function setPlayer(val: string) {
   clientHalfSize = splitSize(clientSize, 2);
   document.getElementById("pointsPl1").innerText = "0";
   document.getElementById("pointsPl2").innerText = "0";
-
+  socket.emit('Start', 'futureGameID');
 
   player = parseInt(val);
   if (player === 1) {
