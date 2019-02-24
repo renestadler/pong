@@ -107,11 +107,11 @@ document.addEventListener('keyup', event => {
 
 
 clientSocket.on('Move', async code => {
-  if (player === 1) {
+  if (code.paddleNum === 2) {
     currentPaddlePosition2 = code.pos * heightFactor;
     paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
   }
-  else if (player === 2) {
+  else if (code.paddleNum === 1) {
     currentPaddlePosition1 = code.pos * heightFactor;
     paddle1.style.setProperty('top', `${currentPaddlePosition1}px`);
   }
@@ -311,5 +311,5 @@ function splitSize(s: Size, divider: number): Size {
 }
 
 function toLobby(){
-  (<any>document.parentElement).lobby();
+  (<any>window.parent).lobby();
 }
