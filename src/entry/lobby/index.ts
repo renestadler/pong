@@ -91,7 +91,7 @@ socket.on("UpdateDifficulty", function (change) {
 });
 
 socket.on("Start", function () {
-    (<any>window.parent).start(playerNum);
+    (<any>window.parent).start(playerNum, socket);
 });
 
 //TODO: switch to client after game started

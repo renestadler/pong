@@ -4,7 +4,7 @@ let paddle1;
 let paddle2;
 let paddleHeight;
 let paddleHalfHeight;
-const clientSocket = io();
+let clientSocket = null;
 let currentPaddlePosition1;
 let currentPaddlePosition2;
 let ball;
@@ -43,7 +43,75 @@ interface Size {
 enum Direction { top, right, bottom, left };
 
 window.addEventListener("load", async () => {
-  document.getElementById("hiddenId").innerText = (<any>window.parent).playerNumber + "";
+  setPlayer((<any>window.parent).playerNumber);
+  clientSocket = (<any>window.parent).s;
+
+  clientSocket.on('Move', async code => {
+    if (code.paddleNum === 2) {
+      currentPaddlePosition2 = code.pos * heightFactor;
+      paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
+    }
+    else if (code.paddleNum === 1) {
+      currentPaddlePosition1 = code.pos * heightFactor;
+      paddle1.style.setProperty('top', `${currentPaddlePosition1}px`);
+    }
+  });
+  
+  clientSocket.on("Options", async code => {
+    heightFactor = document.documentElement.clientHeight / code.client.height;
+    widthFactor = document.documentElement.clientWidth / code.client.width;
+    ballSize = { width: code.ball.width * widthFactor, height: code.ball.height * heightFactor };
+    paddleSize = { width: code.paddle.width * widthFactor, height: code.paddle.height * heightFactor };
+    paddleHeight = paddleSize.height;
+    paddleHalfHeight = paddleHeight / 2;
+    ballHalfSize = splitSize(ballSize, 2);
+    clientSize = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
+    clientHalfSize = splitSize(clientSize, 2);
+    ball.style.setProperty('width', ballSize.width + "px");
+    ball.style.setProperty('height', ballSize.height + "px");
+    paddle1.style.setProperty('width', paddleSize.width + "px");
+    paddle1.style.setProperty('height', paddleSize.height + "px")
+    paddle2.style.setProperty('width', paddleSize.width + "px");
+    paddle2.style.setProperty('height', paddleSize.height + "px");
+  });
+  
+  clientSocket.on("Wait", async code => {
+    document.getElementById("winner").innerText = "Game starts in " + code;
+  });
+  
+  clientSocket.on("Prepare", async code => {
+    let startPos: Point = { x: code.startPos.x * widthFactor, y: code.startPos.y * heightFactor };
+    document.getElementById("winner").innerText = "";
+    moveBall(startPos);
+  });
+  
+  clientSocket.on("BallMove", async code => {
+    let pos: Point = { x: code.x * widthFactor, y: code.y * heightFactor };
+    moveBall(pos);
+  });
+  
+  clientSocket.on("Point", async code => {
+    switch (code.pId) {
+      case 1:
+        document.getElementById("pointsPl1").innerText = code.points;
+        break;
+      case 2:
+        document.getElementById("pointsPl2").innerText = code.points;
+        break;
+    }
+  });
+  
+  clientSocket.on("Win", async code => {
+    switch (code.pId) {
+      case 1:
+        document.getElementById("winner").innerText = "Player 1(" + code.name + ") won!";
+        break;
+      case 2:
+        document.getElementById("winner").innerText = "Player 2(" + code.name + ") won!";
+        break;
+    }
+    document.getElementById("lobby").hidden = false;
+  });
 });
 
 // Listen to keydown event
@@ -108,73 +176,6 @@ document.addEventListener('keyup', event => {
 });
 
 
-clientSocket.on('Move', async code => {
-  if (code.paddleNum === 2) {
-    currentPaddlePosition2 = code.pos * heightFactor;
-    paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
-  }
-  else if (code.paddleNum === 1) {
-    currentPaddlePosition1 = code.pos * heightFactor;
-    paddle1.style.setProperty('top', `${currentPaddlePosition1}px`);
-  }
-});
-
-clientSocket.on("Options", async code => {
-  heightFactor = document.documentElement.clientHeight / code.client.height;
-  widthFactor = document.documentElement.clientWidth / code.client.width;
-  ballSize = { width: code.ball.width * widthFactor, height: code.ball.height * heightFactor };
-  paddleSize = { width: code.paddle.width * widthFactor, height: code.paddle.height * heightFactor };
-  paddleHeight = paddleSize.height;
-  paddleHalfHeight = paddleHeight / 2;
-  ballHalfSize = splitSize(ballSize, 2);
-  clientSize = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
-  clientHalfSize = splitSize(clientSize, 2);
-  ball.style.setProperty('width', ballSize.width + "px");
-  ball.style.setProperty('height', ballSize.height + "px");
-  paddle1.style.setProperty('width', paddleSize.width + "px");
-  paddle1.style.setProperty('height', paddleSize.height + "px")
-  paddle2.style.setProperty('width', paddleSize.width + "px");
-  paddle2.style.setProperty('height', paddleSize.height + "px");
-});
-
-clientSocket.on("Wait", async code => {
-  document.getElementById("winner").innerText = "Game starts in " + code;
-});
-
-clientSocket.on("Prepare", async code => {
-  let startPos: Point = { x: code.startPos.x * widthFactor, y: code.startPos.y * heightFactor };
-  document.getElementById("winner").innerText = "";
-  moveBall(startPos);
-});
-
-clientSocket.on("BallMove", async code => {
-  let pos: Point = { x: code.x * widthFactor, y: code.y * heightFactor };
-  moveBall(pos);
-});
-
-clientSocket.on("Point", async code => {
-  switch (code.pId) {
-    case 1:
-      document.getElementById("pointsPl1").innerText = code.points;
-      break;
-    case 2:
-      document.getElementById("pointsPl2").innerText = code.points;
-      break;
-  }
-});
-
-clientSocket.on("Win", async code => {
-  switch (code.pId) {
-    case 1:
-      document.getElementById("winner").innerText = "Player 1(" + code.name + ") won!";
-      break;
-    case 2:
-      document.getElementById("winner").innerText = "Player 2(" + code.name + ") won!";
-      break;
-  }
-  document.getElementById("lobby").hidden = false;
-});
-
 function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -187,7 +188,6 @@ function setPlayerInit() {
 
 async function setPlayer(val: number) {
   document.getElementById("game").style.display = "block";
-  document.getElementById("player").style.display = "none";
   paddle1 = document.getElementsByClassName('paddle1')[0];
   paddle2 = document.getElementsByClassName('paddle2')[0];
   paddleHeight = paddle1.clientHeight;
