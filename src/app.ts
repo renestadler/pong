@@ -82,6 +82,8 @@ io.on('connection', (socket) => {
       }
       curGame = toJoin[0];
     }
+    curGame.p1Socket.emit('Start');
+    curGame.p2Socket.emit('Start');
 
     curGame.p1Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
     curGame.p2Socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
@@ -220,6 +222,7 @@ io.on('connection', (socket) => {
     toJoin[0].p2Name = gameStuff.pName;
     toJoin[0].p2Socket = socket;
     socket.emit('Join', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status}); 
+    toJoin[0].p1Socket.emit('Join', {gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status}); 
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
 
