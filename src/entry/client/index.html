@@ -17,17 +17,14 @@
 </head>
 
 <body>
-    <div id="player" style="display:block;">
-        <button onclick="setPlayer('1')">Play as Player1</button>
-        <button onclick="setPlayer('2')">Play as Player2</button>
-    </div>
-    <div id="game" style="display:none;">
+    <div id="game">
         <div class="paddle1"></div>
         <div class="paddle2"></div>
         <div id="ball"></div>
         <div id="pointsPl1"></div>
         <div id="pointsPl2"></div>
         <div id="winner"></div>
+        <button id="lobby" hidden onclick="toLobby()">Back to Lobby</button>
     </div>
 </body>
 

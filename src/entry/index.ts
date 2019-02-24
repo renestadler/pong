@@ -12,3 +12,7 @@ function watchGame(id: number, playerName: string){
     //TODO: Number, Name
     (<any>document.getElementById("myFrame")).src="/../client/index.html"
 }*/
+
+function lobby(){
+    (<any>document.getElementById("myFrame")).src="/../lobby/index.html";
+}

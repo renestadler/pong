@@ -47,6 +47,7 @@ interface MyGame {
   p1points: number;
   p2points: number;
   pointsToWin: number;
+  difficulty: number;
   watching: sio.Socket[];
 }
 
@@ -73,7 +74,7 @@ io.on('connection', (socket) => {
     let toJoin = games.filter(game => game.id === gameId);
     let curGame: MyGame;
     if (gameId === "futureGameID") {
-      curGame = { status: GameStatus.RUNNING, id: 0, pointsToWin: 2, name: null, p1Name: null, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] };
+      curGame = { status: GameStatus.RUNNING, id: 0, pointsToWin: 2, difficulty: 1, name: null, p1Name: null, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] };
     } else {
       if (toJoin.length === 0) {
         socket.emit('Join', "Error: Game not found");
@@ -186,6 +187,26 @@ io.on('connection', (socket) => {
 
   //Lobby stuff
 
+  socket.on('UpdatePTW', function (gameStuff) {
+    let toJoin = games.filter(game => game.id === gameStuff.gameId);
+    if (toJoin.length === 0) {
+      socket.emit('UpdatePTW', "Error: no Game to join found");
+      return;
+    }
+    toJoin[0].pointsToWin = gameStuff.change;
+    sendToAll('UpdatePTW', gameStuff.change, toJoin[0]);
+  });
+
+  socket.on('UpdateDifficulty', function (gameStuff) {
+    let toJoin = games.filter(game => game.id === gameStuff.gameId);
+    if (toJoin.length === 0) {
+      socket.emit('UpdateDifficulty', "Error: no Game to join found");
+      return;
+    }
+    toJoin[0].difficulty = gameStuff.change;
+    sendToAll('UpdateDifficulty', gameStuff.change, toJoin[0]);
+  });
+
   socket.on('Games', function () {
     let allGames: MyGameDto[] = [];
     for (let i = 0; i < games.length; i++) {
@@ -195,7 +216,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('Create', function (gameStuff) {
-    games.push({ status: GameStatus.LOBBY, id: games.length, pointsToWin: 2, name: gameStuff.gameName, p1Name: gameStuff.playerName, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] });
+    games.push({ status: GameStatus.LOBBY, id: games.length, pointsToWin: 2, difficulty: 1, name: gameStuff.gameName, p1Name: gameStuff.playerName, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] });
     socket.emit('Create', games.length - 1);
     socket.broadcast.emit('Created', games.length - 1);
   });

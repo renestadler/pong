@@ -164,12 +164,13 @@ clientSocket.on("Point", async code => {
 clientSocket.on("Win", async code => {
   switch (code.pId) {
     case 1:
-      document.getElementById("winner").innerText = "Player 1("+code.name+") won!";
+      document.getElementById("winner").innerText = "Player 1(" + code.name + ") won!";
       break;
     case 2:
-    document.getElementById("winner").innerText = "Player 2("+code.name+") won!";
+      document.getElementById("winner").innerText = "Player 2(" + code.name + ") won!";
       break;
   }
+  document.getElementById("lobby").hidden = false;
 });
 
 function delay(ms: number) {
@@ -269,75 +270,6 @@ function movePaddle(targetPosition: number, player: number): void {
   }
 }
 
-/**
- * Animate the ball from the current position to the target position. Stops
- * animation if border of browser window is reached.
- * @returns Position and direction where ball touched the border of the browser window
- *          at the end of the animation
- */
-function animateBall(currentBallPosition: Point, targetBallPosition: Point): Promise<{ touchPosition: Point, touchDirection: Direction, borderTouched: number }> {
-  // Calculate x and y distances from current to target position
-  const distanceToTarget: Size = subtractPoints(targetBallPosition, currentBallPosition);
-
-  // Use Pythagoras to calculate distance from current to target position
-  const distance = Math.sqrt(distanceToTarget.width * distanceToTarget.width + distanceToTarget.height * distanceToTarget.height);
-
-  // Variable defining the speed of the animation (pixels that the ball travels per interval)
-  const pixelsPerInterval = 1;
-
-  // Calculate distance per interval
-  const distancePerInterval = splitSize(distanceToTarget, distance * pixelsPerInterval);
-
-  // Return a promise that will resolve when animation is done
-  return new Promise<{ touchPosition: Point, touchDirection: Direction, borderTouched: number }>(res => {
-    // Start at current ball position
-    let animatedPosition: Point = currentBallPosition;
-
-    // Move point every 4ms
-    const interval = setInterval(() => {
-      // Move animated position by the distance it has to travel per interval
-      animatedPosition = movePoint(animatedPosition, distancePerInterval);
-
-      // Move the ball to the new position
-      moveBall(animatedPosition);
-
-      // Check if the ball touches the browser window's border
-      let touchDirection: Direction;
-      //borderTouched returns the number of the paddle where the ball exited (so the loser of the round)
-      let borderTouched: number = -1;
-      if ((animatedPosition.x - ballHalfSize.width) < 0) { touchDirection = Direction.left; borderTouched = 1; }
-      if ((animatedPosition.y - ballHalfSize.height) < 0) { touchDirection = Direction.top; }
-      if ((animatedPosition.x + ballHalfSize.width) > clientSize.width) { touchDirection = Direction.right; borderTouched = 2; }
-      if ((animatedPosition.y + ballHalfSize.height) > clientSize.height) { touchDirection = Direction.bottom; }
-      if ((animatedPosition.x - ballHalfSize.width) > 50 && (animatedPosition.x - ballHalfSize.width) < 70 && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition1 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition1 + 100)) {
-        touchDirection = Direction.left;
-      }
-      if ((animatedPosition.x - ballHalfSize.width) > 50 && (animatedPosition.x - ballHalfSize.width) < 70 && (animatedPosition.y + ballHalfSize.height) === currentPaddlePosition1) {
-        touchDirection = Direction.top;
-      }
-      if ((animatedPosition.x - ballHalfSize.width) > 50 && (animatedPosition.x - ballHalfSize.width) < 70 && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition1 + 100)) {
-        touchDirection = Direction.bottom;
-      }
-
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 50) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - 70) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition2 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition2 + 100)) {
-        touchDirection = Direction.right;
-      }
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 50) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - 70) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2)) {
-        touchDirection = Direction.top;
-      }
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 50) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - 70) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2 + 100)) {
-        touchDirection = Direction.bottom;
-      }
-
-      if (touchDirection !== undefined) {
-        // Ball touches border -> stop animation
-        clearInterval(interval);
-        res({ touchPosition: animatedPosition, touchDirection: touchDirection, borderTouched: borderTouched });
-      }
-    }, 4);
-  });
-}
-
 /** Move the center of the ball to given position **/
 function moveBall(targetPosition: Point): void {
   // Note the 'px' at the end of the coordinates for CSS. Don't
@@ -376,4 +308,8 @@ function splitSize(s: Size, divider: number): Size {
     width: s.width / divider,
     height: s.height / divider
   };
+}
+
+function toLobby(){
+  (<any>document.parentElement).lobby();
 }
