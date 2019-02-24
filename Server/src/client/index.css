@@ -35,3 +35,33 @@ body {
     height: 10px;
     background-color: red;
 }
+
+#pointsPl1 {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    left: 150px;
+    top: 20px;
+}
+
+#pointsPl2 {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    right: 150px;
+    top: 20px;
+}
+
+#winner {
+    width: 250px;
+    height: 50px;
+    position:absolute; /*it can be fixed too*/
+    left:0; right:0;
+    top:0; bottom:0;
+    margin:auto;
+
+    /*this to solve "the content will not be cut when the window is smaller than the content": */
+    max-width:100%;
+    max-height:100%;
+    overflow:auto;
+}
