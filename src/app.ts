@@ -234,6 +234,7 @@ io.on('connection', (socket) => {
     toJoin[0].p2Socket = socket;
     socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status });
     toJoin[0].p1Socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status });
+    sendToAll('Joined',gameStuff.pName,toJoin[0]);
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
 

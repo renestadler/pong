@@ -17,12 +17,14 @@ body {
     position: absolute;
     background-color: red;
     left: 5%;
+    top: 45%;
 }
 
 .paddle2 {
     position: absolute;
     background-color: red;
     right: 5%;
+    top: 45%;
 }
 
 #ball {
