@@ -68,9 +68,7 @@ const paddleSize: Size = { width: 16, height: 4 };
 // Handle the connection of new websocket clients
 io.on('connection', (socket) => {
   socket.on('Start', async function (gameId) {
-    console.log("a");
     let toJoin = games.filter(game => game.id === gameId);
-    console.log("b");
     let curGame: MyGame;
     if (gameId === "futureGameID") {
       curGame = { status: GameStatus.RUNNING, id: 0, pointsToWin:2,name: null, p1Name: null, p1Socket: null, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] };
@@ -119,7 +117,6 @@ io.on('connection', (socket) => {
       // Animate ball to calculated target position
       //TODO:
       const borderTouch = await animateBall(ballCurrentPosition, targetBallPosition);
-      console.log(borderTouch.borderTouched);
       if (borderTouch.borderTouched > 0) {
         if (borderTouch.borderTouched === 1) {
           curGame.p2points++;
@@ -128,7 +125,6 @@ io.on('connection', (socket) => {
           //Player 2 lost
           curGame.p1points++;
         }
-        console.log("point");
         //TODO: send to client
 
         ballCurrentPosition.x = clientHalfSize.width;
@@ -175,7 +171,6 @@ io.on('connection', (socket) => {
         ballCurrentPosition.y = Math.min(Math.max(borderTouch.touchPosition.y - ballHalfSize.height, 0) + ballHalfSize.height, clientSize.height);
       }
     } while (!won);
-    console.log("end");
     //WIN
   });
   // Handle an ArrowKey event
@@ -247,7 +242,6 @@ function delay(ms: number) {
 
 function animateBall(currentBallPosition: Point, targetBallPosition: Point): Promise<{ touchPosition: Point, touchDirection: Direction, borderTouched: number }> {
 
-  console.log(currentBallPosition);
   // Calculate x and y distances from current to target position
   const distanceToTarget: Size = subtractPoints(targetBallPosition, currentBallPosition);
 
@@ -255,23 +249,20 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point): Pro
   const distance = Math.sqrt(distanceToTarget.width * distanceToTarget.width + distanceToTarget.height * distanceToTarget.height);
 
   // Variable defining the speed of the animation (pixels that the ball travels per interval)
-  const pixelsPerInterval = 1;
-
+  const pixelsPerInterval = 2;
   // Calculate distance per interval
   const distancePerInterval = splitSize(distanceToTarget, distance * pixelsPerInterval);
-
   // Return a promise that will resolve when animation is done
   return new Promise<{ touchPosition: Point, touchDirection: Direction, borderTouched: number }>(res => {
     // Start at current ball position
     let animatedPosition: Point = currentBallPosition;
 
-    // Move point every 4ms
+    // Move point every 16ms
     const interval = setInterval(() => {
       let currentPaddlePosition1 = 0;
       let currentPaddlePosition2 = 0;
       // Move animated position by the distance it has to travel per interval
       animatedPosition = movePoint(animatedPosition, distancePerInterval);
-
       // Move the ball to the new position
       //moveBall(animatedPosition);
 
@@ -308,7 +299,7 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point): Pro
         clearInterval(interval);
         res({ touchPosition: animatedPosition, touchDirection: touchDirection, borderTouched: borderTouched });
       }
-    }, 4);
+    }, 16);
   });
 }
 
