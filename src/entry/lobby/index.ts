@@ -1,4 +1,3 @@
 function helloWorld(){
-    (<any>window.parent).hello();
-    console.log("hello1");
+    (<any>window.parent).joinGame();
 }

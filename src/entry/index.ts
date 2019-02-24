@@ -1,4 +1,3 @@
-function hello(){
+function joinGame(){
     (<any>document.getElementById("myFrame")).src="/../client/index.html"
-    console.log("hello");
 }
