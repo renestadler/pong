@@ -15,12 +15,22 @@ const io = sio(server);
 let games: MyGame[];
 interface MyGame {
   id: number;
+  name: string;
+  p1Name: string;
+  p1Socket: sio.Socket;
+  p2Name: string;
+  p2Socket: sio.Socket;
+  p1points: number;
+  p2points: number;
+  watching: sio.Socket[];
+}
+interface MyGameDto {
+  id: number;
+  name: string;
   p1Name: string;
   p2Name: string;
   p1points: number;
   p2points: number;
-  watching: string[];
-
 }
 
 
@@ -32,8 +42,8 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('Move', gameId);
   });
 
-  socket.on('Create', function (player1) {
-    games.push({ id: games.length, p1Name: player1, p2Name: null, p1points: 0, p2points: 0, watching: [] });
+  socket.on('Create', function (gameStuff) {
+    games.push({ id: games.length,name:gameStuff.gameName, p1Name: gameStuff.playerName, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] });
     socket.emit('Created', games.length - 1);
     socket.broadcast.emit('Created', games.length - 1);
   });
@@ -43,12 +53,13 @@ io.on('connection', (socket) => {
     if (toJoin.length === 0) {
       socket.emit('Join', "Error: no Game to join found");
       return;
-    } else if (toJoin[0].p2Name != null) {
+    } else if (toJoin[0].p2Name != null||toJoin[0].p2Socket != null) {
       socket.emit('Join', "Error: Game is already full");
       return;
-      socket.broadcast.emit('Joined', gameStuff.gameId);
     }
     toJoin[0].p2Name = gameStuff.pName;
+    toJoin[0].p2Socket = socket;
+    socket.emit('Join', gameStuff.gameId);
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
 
