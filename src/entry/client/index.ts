@@ -42,7 +42,9 @@ interface Size {
 /** Represents directions  */
 enum Direction { top, right, bottom, left };
 
-
+window.addEventListener("load", async () => {
+  document.getElementById("hiddenId").innerText = (<any>window.parent).playerNumber + "";
+});
 
 // Listen to keydown event
 document.addEventListener('keydown', event => {
@@ -177,7 +179,13 @@ function delay(ms: number) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function setPlayer(val: string) {
+function setPlayerInit() {
+  console.log("Test");
+  let i: number = parseInt(document.getElementById("hiddenId").textContent);
+  setPlayer(i);
+}
+
+async function setPlayer(val: number) {
   document.getElementById("game").style.display = "block";
   document.getElementById("player").style.display = "none";
   paddle1 = document.getElementsByClassName('paddle1')[0];
@@ -195,7 +203,7 @@ async function setPlayer(val: string) {
   document.getElementById("pointsPl2").innerText = "0";
   clientSocket.emit('Start', 'futureGameID');
 
-  player = parseInt(val);
+  player = val;
   if (player === 1) {
     const hammertime = new Hammer(paddle1);
     hammertime.get('pan').set({ direction: Hammer.DIRECTION_DOWN | Hammer.DIRECTION_UP });
@@ -310,6 +318,6 @@ function splitSize(s: Size, divider: number): Size {
   };
 }
 
-function toLobby(){
-  (<any>document.parentElement).lobby();
+function toLobby() {
+  (<any>window.parent).lobby();
 }

@@ -21,7 +21,7 @@
         <h2 id="gameTitle"></h2>
         <br>
         <p>Points to win: 
-        <select id="pointsToWin">
+        <select onchange="updatePTW()" id="pointsToWin">
                 <option value="1">1</option>
                 <option value="2">2</option>
                 <option value="3">3</option>
@@ -40,10 +40,10 @@
         </select></p>
 
         <p>Difficulty: 
-        <select id="difficulty">
-            <option value="e">Easy</option>
-            <option value="n">Normal</option>
-            <option value="h">Hard</option>
+        <select onchange="updateDifficulty()" id="difficulty">
+            <option value="1">Easy</option>
+            <option value="2">Normal</option>
+            <option value="3">Hard</option>
         </select></p>
 
         <br>

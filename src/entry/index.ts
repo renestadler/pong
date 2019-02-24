@@ -1,17 +1,9 @@
-/*function joinGame(id: number, playerName: string){
-    //TODO: Number, Name
-    (<any>document.getElementById("myFrame")).src="/../client/index.html"
-}
+let playerNumber: number;
 
-function createGame(gameName: string, playerName: string){
-    //TODO: Name
-    (<any>document.getElementById("myFrame")).src="/../client/index.html"
+function start(playerNum: number){
+    playerNumber = playerNum;
+    (<any>document.getElementById("myFrame")).src="/../client/index.html";
 }
-
-function watchGame(id: number, playerName: string){
-    //TODO: Number, Name
-    (<any>document.getElementById("myFrame")).src="/../client/index.html"
-}*/
 
 function lobby(){
     (<any>document.getElementById("myFrame")).src="/../lobby/index.html";
