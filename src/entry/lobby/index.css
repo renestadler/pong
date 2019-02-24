@@ -32,7 +32,6 @@ td {
     font-size: 15px;
 }
 
-
 .normalBtn {
     width: 20%;
     font-size: 20px;
@@ -65,6 +64,10 @@ td {
 
 #pName {
     font-size: 15pt;
+}
+
+#regisBtn {
+    font-size: 12pt;
 }
 
 .player .tooltiptext {

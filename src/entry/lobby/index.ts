@@ -1,38 +1,7 @@
 let playerName: string = "Buguser";
+const socket = io();
 
-function loadLobby(){
-    if ((<HTMLInputElement>document.getElementById("playerName")).value.length > 0) {
-        document.getElementById("lobby").style.display = "block";
-        document.getElementById("registration").style.display = "none";
-        playerName = (<HTMLInputElement>document.getElementById("playerName")).value;
-        loadGames();
-    }
-}
-
-function cGame(){
-    (<any>window.parent).createGame(playerName);
-}
-
-function jGame(id: number){
-    console.log(id);
-    (<any>window.parent).joinGame(id, playerName);
-}
-
-function wGame(id: number){
-    console.log(id);
-    (<any>window.parent).watchGame(id, playerName);
-}
-
-function refreshGames(){
-    //TODO: Delete current list
-    loadGames();
-}
-
-function loadGames(){
-    //TODO: Load the list with socket.io and create the html elements
-    let games = getGames();
-    
-    document.getElementById("pName").innerText = `Your name: ${playerName}!`;
+socket.on("Games", function(games:any[]){
     let html = "<table>";
     html += `<tr><th class="name">Game</th><th class="numPlayers">Player</th><th class="status">Status</th><th class="join">Join Game</th><th class="watch">Watch Game</th></tr>`;
     
@@ -57,11 +26,37 @@ function loadGames(){
     });
     html += "</table>";
     document.getElementById("activeGames").innerHTML = html;
+});
+
+function loadLobby(){
+    if ((<HTMLInputElement>document.getElementById("playerName")).value.length > 0) {
+        document.getElementById("lobby").style.display = "block";
+        document.getElementById("registration").style.display = "none";
+        playerName = (<HTMLInputElement>document.getElementById("playerName")).value;
+        document.getElementById("pName").innerText = `Your name: ${playerName}`;
+        loadGames();
+    }
 }
 
-function getGames(){
-    let ar = new Array();
-    ar.push({name: "test", id: 1, numPlayers: 2, status: "playing", p1Name: "Stalder", p2Name: "Test"});
-    ar.push({name: "hallo", id: 2, numPlayers: 1, status: "lobby", p1Name: "Brych", p2Name: ""});
-    return ar;
+function loadRegistration() {
+    document.getElementById("lobby").style.display = "none";
+    document.getElementById("registration").style.display = "block";
+}
+
+function cGame(){
+    (<any>window.parent).createGame(playerName);
+}
+
+function jGame(id: number){
+    console.log(id);
+    (<any>window.parent).joinGame(id, playerName);
+}
+
+function wGame(id: number){
+    console.log(id);
+    (<any>window.parent).watchGame(id, playerName);
+}
+
+function loadGames(){
+    socket.emit("Games");
 }

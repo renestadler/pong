@@ -4,7 +4,7 @@ let paddle1;
 let paddle2;
 let paddleHeight;
 let paddleHalfHeight;
-const socket = io();
+const clientSocket = io();
 let currentPaddlePosition1;
 let currentPaddlePosition2;
 let ball;
@@ -62,7 +62,7 @@ document.addEventListener('keydown', event => {
     }
     if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       // Send ArrowKey message to server
-      socket.emit('ArrowDown', event.code);
+      clientSocket.emit('ArrowDown', event.code);
     }
   } else if (player === 2) {
     if (!intervalPaddle2) {
@@ -79,7 +79,7 @@ document.addEventListener('keydown', event => {
     }
     if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       // Send ArrowKey message to server
-      socket.emit('ArrowDown', event.code);
+      clientSocket.emit('ArrowDown', event.code);
     }
   }
 });
@@ -95,7 +95,7 @@ document.addEventListener('keyup', event => {
     }
     if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       // Send ArrowKey message to server
-      socket.emit('ArrowUp', { code: event.code, pos: currentPaddlePosition1 });
+      clientSocket.emit('ArrowUp', { code: event.code, pos: currentPaddlePosition1 });
     }
   } else if (player === 2) {
     switch (event.code) {
@@ -106,12 +106,12 @@ document.addEventListener('keyup', event => {
     }
     if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
       // Send ArrowKey message to server
-      socket.emit('ArrowUp', { code: event.code, pos: currentPaddlePosition2 });
+      clientSocket.emit('ArrowUp', { code: event.code, pos: currentPaddlePosition2 });
     }
   }
 });
 
-socket.on('ArrowDown', code => {
+clientSocket.on('ArrowDown', code => {
   if (player === 1) {
     if (!intervalPaddle2) {
       switch (code) {
@@ -141,7 +141,7 @@ socket.on('ArrowDown', code => {
   }
 });
 
-socket.on('ArrowUp', async code => {
+clientSocket.on('ArrowUp', async code => {
   if (player === 1) {
     currentPaddlePosition2 = code.pos;
     await delay(4);
@@ -163,7 +163,7 @@ socket.on('ArrowUp', async code => {
     }
   }
 });
-socket.on('Move', async code => {
+clientSocket.on('Move', async code => {
   if (player === 1) {
     currentPaddlePosition2 = code.pos;
     paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
@@ -194,7 +194,7 @@ async function setPlayer(val: string) {
   clientHalfSize = splitSize(clientSize, 2);
   document.getElementById("pointsPl1").innerText = "0";
   document.getElementById("pointsPl2").innerText = "0";
-  socket.emit('Start', 'futureGameID');
+  clientSocket.emit('Start', 'futureGameID');
 
   player = parseInt(val);
   if (player === 1) {
@@ -203,7 +203,7 @@ async function setPlayer(val: string) {
     hammertime.on('pan', ev => {
       // Put center of paddle to the center of the user's finger
       movePaddle(ev.center.y - paddleHalfHeight, player);
-      socket.emit('Move', { pos: currentPaddlePosition1 });
+      clientSocket.emit('Move', { pos: currentPaddlePosition1 });
     });
   }
   else if (player === 2) {
@@ -212,7 +212,7 @@ async function setPlayer(val: string) {
     hammertime.on('pan', ev => {
       // Put center of paddle to the center of the user's finger
       movePaddle(ev.center.y - paddleHalfHeight, player);
-      socket.emit('Move', { pos: currentPaddlePosition2 });
+      clientSocket.emit('Move', { pos: currentPaddlePosition2 });
     });
   }
 

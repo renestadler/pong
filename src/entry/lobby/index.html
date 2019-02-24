@@ -16,15 +16,19 @@
 </head>
 
 <body>
+    <div id="game" style="display:none;">
+        
+    </div>
     <div id="lobby" style="display:none;">
         <h1>Pong - Lobby</h1>
-        <div id="pName"></div>
-        <br>
+        <div id="pName">
+        </div><button id="regisBtn" onclick="loadRegistration()">Change Name</button>
+        <br><br>
         <button class="normalBtn" onclick="cGame()">Create Game</button>
         <br><br>
         <div id="activeGames"></div>
         <br>
-        <button class="normalBtn" onclick="refreshGames()">Refresh List</button>
+        <button class="normalBtn" onclick="loadGames()">Refresh List</button>
     </div>
     <div id="registration" style="display:block;">
         <p>Enter your name: </p>
