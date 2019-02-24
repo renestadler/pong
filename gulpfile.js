@@ -20,7 +20,7 @@ function script() {
 
 function hammer() {
     return gulp.src('node_modules/hammerjs/hammer.js')
-        .pipe(gulp.dest('dist/client'));
+        .pipe(gulp.dest('dist/entry/client'));
 };
 
 function watchSource() {
