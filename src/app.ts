@@ -80,7 +80,8 @@ io.on('connection', (socket) => {
     }
     curGame = toJoin[0];
     if (curGame.status === GameStatus.RUNNING) {
-      socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
+      let curPaddleSize: Size = { width: paddleSize.width, height: paddleSize.height -((curGame.difficulty-1)*3.5) };
+      socket.emit('Options', { ball: ballSize, client: clientSize, paddle: curPaddleSize, p1points:curGame.p1points, p2points:curGame.p2points});
     }
     if (params.playerno === 1) {
       curGame.p1Socket = socket;
@@ -106,7 +107,7 @@ io.on('connection', (socket) => {
     curGame.status = GameStatus.RUNNING;
     await delay(1500);
     let curPaddleSize: Size = { width: paddleSize.width, height: paddleSize.height -((curGame.difficulty-1)*3.5) };
-    sendToAll('Options', { ball: ballSize, client: clientSize, paddle: curPaddleSize }, curGame);
+    sendToAll('Options', { ball: ballSize, client: clientSize, paddle: curPaddleSize, p1points:curGame.p1points, p2points:curGame.p2points}, curGame);
     sendToAll('Wait', 3, curGame);
     await delay(1000);
     sendToAll('Wait', 2, curGame);
@@ -284,6 +285,8 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point, game
   // Calculate x and y distances from current to target position
   const distanceToTarget: Size = subtractPoints(targetBallPosition, currentBallPosition);
 
+  let curPaddleSize: Size = { width: paddleSize.width, height: paddleSize.height -((game.difficulty-1)*3.5) };
+
   // Use Pythagoras to calculate distance from current to target position
   const distance = Math.sqrt(distanceToTarget.width * distanceToTarget.width + distanceToTarget.height * distanceToTarget.height);
 
@@ -313,23 +316,23 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point, game
       if ((animatedPosition.y - ballHalfSize.height) < 0) { touchDirection = Direction.top; }
       if ((animatedPosition.x + ballHalfSize.width) > clientSize.width) { touchDirection = Direction.right; borderTouched = 2; }
       if ((animatedPosition.y + ballHalfSize.height) > clientSize.height) { touchDirection = Direction.bottom; }
-      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition1 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition1 + paddleSize.height)) {
+      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + curPaddleSize.width) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition1 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition1 + curPaddleSize.height)) {
         touchDirection = Direction.left;
       }
-      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) === currentPaddlePosition1) {
+      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + curPaddleSize.width) && (animatedPosition.y + ballHalfSize.height) === currentPaddlePosition1) {
         touchDirection = Direction.top;
       }
-      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + paddleSize.width) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition1 + paddleSize.height)) {
+      if ((animatedPosition.x - ballHalfSize.width) > 8 && (animatedPosition.x - ballHalfSize.width) < (8 + curPaddleSize.width) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition1 + curPaddleSize.height)) {
         touchDirection = Direction.bottom;
       }
 
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition2 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition2 + paddleSize.height)) {
+      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + curPaddleSize.width)) && (animatedPosition.y + ballHalfSize.height) > currentPaddlePosition2 && (animatedPosition.y + ballHalfSize.height) < (currentPaddlePosition2 + curPaddleSize.height)) {
         touchDirection = Direction.right;
       }
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2)) {
+      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + curPaddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2)) {
         touchDirection = Direction.top;
       }
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2 + paddleSize.height)) {
+      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + curPaddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2 + curPaddleSize.height)) {
         touchDirection = Direction.bottom;
       }
 

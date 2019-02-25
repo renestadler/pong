@@ -73,6 +73,8 @@ clientSocket.on("Options", async code => {
   paddle1.style.setProperty('height', paddleSize.height + "px")
   paddle2.style.setProperty('width', paddleSize.width + "px");
   paddle2.style.setProperty('height', paddleSize.height + "px");
+  document.getElementById("pointsPl1").innerText = code.p1points;
+  document.getElementById("pointsPl2").innerText = code.p2points;
 });
 
 clientSocket.on("Wait", async code => {
