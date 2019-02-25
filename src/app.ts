@@ -65,26 +65,46 @@ const ballHalfSize: Size = { width: 1, height: 1 };
 const clientSize: Size = { width: 160, height: 90 };
 const clientHalfSize: Size = { width: 80, height: 45 };
 const paddleSize: Size = { width: 2, height: 16 };
-let currentPaddlePosition1 = 0;
-let currentPaddlePosition2 = 0;
+let currentPaddlePosition1 = 80;
+let currentPaddlePosition2 = 80;
 
 // Handle the connection of new websocket clients
 io.on('connection', (socket) => {
+  socket.on('Reconnect', async function (params) {
+    let toJoin = games.filter(game => game.id === params.id);
+    let curGame: MyGame;
+    if (toJoin.length === 0) {
+      socket.emit('Join', "Error: Game not found");
+      console.log("Error: Game not found" + params.id);
+      return;
+    }
+    curGame = toJoin[0];
+    if (curGame.status === GameStatus.RUNNING) {
+      socket.emit('Options', { ball: ballSize, client: clientSize, paddle: paddleSize });
+    }
+    if (params.playerno === 1) {
+      curGame.p1Socket = socket;
+    } else if (params.playerno === 2) {
+      curGame.p2Socket = socket;
+    } else {
+      curGame.watching.push(socket);
+    }
+  });
+
   socket.on('Start', async function (gameId) {
     let toJoin = games.filter(game => game.id === gameId);
     let curGame: MyGame;
-    if (gameId === "futureGameID") {
-      curGame = { status: GameStatus.RUNNING, id: 0, pointsToWin: 2, difficulty: 1, name: null, p1Name: null, p1Socket: socket, p2Name: null, p2Socket: null, p1points: 0, p2points: 0, watching: [] };
-    } else {
-      if (toJoin.length === 0) {
-        socket.emit('Join', "Error: Game not found");
-        console.log("Error: Game not found" + gameId);
-        return;
-      }
-      curGame = toJoin[0];
+    if (toJoin.length === 0) {
+      socket.emit('Join', "Error: Game not found");
+      console.log("Error: Game not found" + gameId);
+      return;
     }
+    curGame = toJoin[0];
+
     sendToAll('Start', '', curGame);
 
+    curGame.status = GameStatus.RUNNING;
+    await delay(1500);
     sendToAll('Options', { ball: ballSize, client: clientSize, paddle: paddleSize }, curGame);
     sendToAll('Wait', 3, curGame);
     await delay(1000);
@@ -141,12 +161,12 @@ io.on('connection', (socket) => {
           //Player 1 won
           won = true;
           curGame.status = GameStatus.ENDED;
-          sendToAll('Win', { pId: 1, points: curGame.p1Name }, curGame);
+          sendToAll('Win', { pId: 1, name: curGame.p1Name }, curGame);
         } else if (curGame.p2points >= curGame.pointsToWin) {
           //Player 2 won
           won = true;
           curGame.status = GameStatus.ENDED;
-          sendToAll('Win', { pId: 2, points: curGame.p2Name }, curGame);
+          sendToAll('Win', { pId: 2, name: curGame.p2Name }, curGame);
         }
       } else {
         // Based on where the ball touched the browser window, we change the new target quadrant.
@@ -180,9 +200,15 @@ io.on('connection', (socket) => {
   // Handle an ArrowKey event
 
   socket.on('Move', function (pos) {
+    let toJoin = games.filter(game => game.id === pos.gameId);
+    if (toJoin.length === 0) {
+      socket.emit('Join', "Error: Game not found");
+      console.log("Error: Game not found" + pos.gameId);
+      return;
+    }
     pos.paddleNum === 1 ? currentPaddlePosition1 = pos.pos :
       currentPaddlePosition2 = pos.pos;
-    socket.broadcast.emit('Move', pos);
+    sendToAll('Move', pos, toJoin[0]);
   });
 
   //Lobby stuff
@@ -233,8 +259,7 @@ io.on('connection', (socket) => {
     toJoin[0].p2Name = gameStuff.pName;
     toJoin[0].p2Socket = socket;
     socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status });
-    toJoin[0].p1Socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status });
-    sendToAll('JoinP2',gameStuff.pName,toJoin[0]);
+    sendToAll('JoinP2', gameStuff.pName, toJoin[0]);
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
 
@@ -244,7 +269,7 @@ io.on('connection', (socket) => {
       socket.emit('Watch', "Error:  Game not found");
       return;
     }
-    toJoin[0].watching = gameStuff.pName;
+    toJoin[0].watching.push(socket);
     socket.emit('Watch', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName1: toJoin[0].p1Name, playerName2: toJoin[0].p2Name, status: toJoin[0].status });
   });
 
@@ -282,7 +307,6 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point, game
 
       sendToAll('BallMove', animatedPosition, game);
 
-      console.log(currentPaddlePosition1)
       // Check if the ball touches the browser window's border
       let touchDirection: Direction;
       //borderTouched returns the number of the paddle where the ball exited (so the loser of the round)
@@ -307,7 +331,7 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point, game
       if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2)) {
         touchDirection = Direction.top;
       }
-      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2 + 100)) {
+      if ((animatedPosition.x + ballHalfSize.width) < (clientSize.width - 8) && (animatedPosition.x + ballHalfSize.width) > (clientSize.width - (8 + paddleSize.width)) && (animatedPosition.y + ballHalfSize.height) === (currentPaddlePosition2 + paddleSize.height)) {
         touchDirection = Direction.bottom;
       }
 

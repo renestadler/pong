@@ -61,7 +61,7 @@ socket.on("Join", function (infos) {
     playerNum = 2;
 });
 
-socket.on("Watch", function (infos) {
+socket.on("Watch", async function (infos) {
     playerNum = -1;
     if (infos.status === 0) { //Lobby
         document.getElementById("lobby").style.display = "none";
@@ -70,8 +70,10 @@ socket.on("Watch", function (infos) {
         document.getElementById("gameTitle").innerText = `Title: ${infos.gameName}, Id: ${infos.id}`;
         document.getElementById("pl1").innerText = `Player 1: ${infos.playerName1}`;
         document.getElementById("pl2").innerText = `Player 2: ${infos.playerName2}`;
+        gameId = infos.id;
     } else if (infos.status === 1) { //Running
-        (<any>window.parent).start(playerNum);
+        gameId = infos.id;
+        await (<any>window.parent).start(playerNum, gameId);
     }
 });
 
@@ -91,7 +93,7 @@ socket.on("UpdateDifficulty", function (change) {
 });
 
 socket.on("Start", function () {
-    (<any>window.parent).start(playerNum, socket);
+    (<any>window.parent).start(playerNum, gameId);
 });
 
 //TODO: switch to client after game started

@@ -1,10 +1,12 @@
-
+let started: boolean;
+let down: boolean = false;
 let player: number;
+let id_game: number;
 let paddle1;
 let paddle2;
 let paddleHeight;
 let paddleHalfHeight;
-let clientSocket = null;
+let clientSocket: SocketIOClient.Socket = io();
 let currentPaddlePosition1;
 let currentPaddlePosition2;
 let ball;
@@ -42,168 +44,43 @@ interface Size {
 /** Represents directions  */
 enum Direction { top, right, bottom, left };
 
-window.addEventListener("load", async () => {
-  setPlayer((<any>window.parent).playerNumber);
-  clientSocket = (<any>window.parent).s;
 
-  clientSocket.on('Move', async code => {
-    if (code.paddleNum === 2) {
-      currentPaddlePosition2 = code.pos * heightFactor;
-      paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
-    }
-    else if (code.paddleNum === 1) {
-      currentPaddlePosition1 = code.pos * heightFactor;
-      paddle1.style.setProperty('top', `${currentPaddlePosition1}px`);
-    }
-  });
-  
-  clientSocket.on("Options", async code => {
-    heightFactor = document.documentElement.clientHeight / code.client.height;
-    widthFactor = document.documentElement.clientWidth / code.client.width;
-    ballSize = { width: code.ball.width * widthFactor, height: code.ball.height * heightFactor };
-    paddleSize = { width: code.paddle.width * widthFactor, height: code.paddle.height * heightFactor };
-    paddleHeight = paddleSize.height;
-    paddleHalfHeight = paddleHeight / 2;
-    ballHalfSize = splitSize(ballSize, 2);
-    clientSize = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
-    clientHalfSize = splitSize(clientSize, 2);
-    ball.style.setProperty('width', ballSize.width + "px");
-    ball.style.setProperty('height', ballSize.height + "px");
-    paddle1.style.setProperty('width', paddleSize.width + "px");
-    paddle1.style.setProperty('height', paddleSize.height + "px")
-    paddle2.style.setProperty('width', paddleSize.width + "px");
-    paddle2.style.setProperty('height', paddleSize.height + "px");
-  });
-  
-  clientSocket.on("Wait", async code => {
-    document.getElementById("winner").innerText = "Game starts in " + code;
-  });
-  
-  clientSocket.on("Prepare", async code => {
-    let startPos: Point = { x: code.startPos.x * widthFactor, y: code.startPos.y * heightFactor };
-    document.getElementById("winner").innerText = "";
-    moveBall(startPos);
-  });
-  
-  clientSocket.on("BallMove", async code => {
-    let pos: Point = { x: code.x * widthFactor, y: code.y * heightFactor };
-    moveBall(pos);
-  });
-  
-  clientSocket.on("Point", async code => {
-    switch (code.pId) {
-      case 1:
-        document.getElementById("pointsPl1").innerText = code.points;
-        break;
-      case 2:
-        document.getElementById("pointsPl2").innerText = code.points;
-        break;
-    }
-  });
-  
-  clientSocket.on("Win", async code => {
-    switch (code.pId) {
-      case 1:
-        document.getElementById("winner").innerText = "Player 1(" + code.name + ") won!";
-        break;
-      case 2:
-        document.getElementById("winner").innerText = "Player 2(" + code.name + ") won!";
-        break;
-    }
-    document.getElementById("lobby").hidden = false;
-  });
-});
 
-// Listen to keydown event
-document.addEventListener('keydown', event => {
-  // We have to check whether a movement is already in progress. This is
-  // necessary because keydown events arrive often when key is
-  // continuously pressed.
-  if (player === 1) {
-    if (!intervalPaddle1) {
-      switch (event.code) {
-        case 'ArrowDown':
-          directionPaddle1 = speedPaddle1;
-          startMoving(player);
-          break;
-        case 'ArrowUp':
-          directionPaddle1 = speedPaddle1 * -1;
-          startMoving(player);
-          break;
-      }
-    }
-    if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
-      // Send ArrowKey message to server
-      clientSocket.emit('ArrowDown', event.code);
-    }
-  } else if (player === 2) {
-    if (!intervalPaddle2) {
-      switch (event.code) {
-        case 'ArrowDown':
-          directionPaddle2 = speedPaddle2;
-          startMoving(player);
-          break;
-        case 'ArrowUp':
-          directionPaddle2 = speedPaddle2 * -1;
-          startMoving(player);
-          break;
-      }
-    }
-    if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
-      // Send ArrowKey message to server
-      clientSocket.emit('ArrowDown', event.code);
-    }
+clientSocket.on('Move', async code => {
+  if (code.paddleNum === 2 && player !== 2) {
+    currentPaddlePosition2 = code.pos * heightFactor;
+    paddle2.style.setProperty('top', `${currentPaddlePosition2}px`);
+  }
+  else if (code.paddleNum === 1 && player !== 1) {
+    currentPaddlePosition1 = code.pos * heightFactor;
+    paddle1.style.setProperty('top', `${currentPaddlePosition1}px`);
   }
 });
 
-// Listen to keyup event
-document.addEventListener('keyup', event => {
-  if (player === 1) {
-    switch (event.code) {
-      case 'ArrowDown':
-      case 'ArrowUp':
-        stopMoving(player);
-        break;
-    }
-  } else if (player === 2) {
-    switch (event.code) {
-      case 'ArrowDown':
-      case 'ArrowUp':
-        stopMoving(player);
-        break;
-    }
-  }
-});
-
-
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function setPlayerInit() {
-  console.log("Test");
-  let i: number = parseInt(document.getElementById("hiddenId").textContent);
-  setPlayer(i);
-}
-
-async function setPlayer(val: number) {
-  document.getElementById("game").style.display = "block";
-  paddle1 = document.getElementsByClassName('paddle1')[0];
-  paddle2 = document.getElementsByClassName('paddle2')[0];
-  paddleHeight = paddle1.clientHeight;
+clientSocket.on("Options", async code => {
+  heightFactor = document.documentElement.clientHeight / code.client.height;
+  widthFactor = document.documentElement.clientWidth / code.client.width;
+  ballSize = { width: code.ball.width * widthFactor, height: code.ball.height * heightFactor };
+  paddleSize = { width: code.paddle.width * widthFactor, height: code.paddle.height * heightFactor };
+  paddleHeight = paddleSize.height;
   paddleHalfHeight = paddleHeight / 2;
-  currentPaddlePosition1 = paddle1.clientTop;
-  currentPaddlePosition2 = paddle2.clientTop;
-  ball = document.getElementById('ball');
-  ballSize = { width: ball.clientWidth, height: ball.clientHeight };
   ballHalfSize = splitSize(ballSize, 2);
   clientSize = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
   clientHalfSize = splitSize(clientSize, 2);
-  document.getElementById("pointsPl1").innerText = "0";
-  document.getElementById("pointsPl2").innerText = "0";
-  clientSocket.emit('Start', 'futureGameID');
+  ball.style.setProperty('width', ballSize.width + "px");
+  ball.style.setProperty('height', ballSize.height + "px");
+  paddle1.style.setProperty('width', paddleSize.width + "px");
+  paddle1.style.setProperty('height', paddleSize.height + "px")
+  paddle2.style.setProperty('width', paddleSize.width + "px");
+  paddle2.style.setProperty('height', paddleSize.height + "px");
+});
 
-  player = val;
+clientSocket.on("Wait", async code => {
+  document.getElementById("winner").innerText = "Game starts in " + code;
+});
+
+clientSocket.on("Prepare", async code => {
+  started = true;
   if (player === 1) {
     const hammertime = new Hammer(paddle1);
     hammertime.get('pan').set({ direction: Hammer.DIRECTION_DOWN | Hammer.DIRECTION_UP });
@@ -220,12 +97,145 @@ async function setPlayer(val: number) {
       movePaddle(ev.center.y - paddleHalfHeight, player);
     });
   }
+  let startPos: Point = { x: code.startPos.x * widthFactor, y: code.startPos.y * heightFactor };
+  document.getElementById("winner").innerText = "";
+  moveBall(startPos);
+});
+
+clientSocket.on("BallMove", async code => {
+  let pos: Point = { x: code.x * widthFactor, y: code.y * heightFactor };
+  moveBall(pos);
+});
+
+clientSocket.on("Point", async code => {
+  switch (code.pId) {
+    case 1:
+      document.getElementById("pointsPl1").innerText = code.points;
+      break;
+    case 2:
+      document.getElementById("pointsPl2").innerText = code.points;
+      break;
+  }
+  paddle1.style.setProperty('top', `45%`);
+  paddle2.style.setProperty('top', `45%`);
+  currentPaddlePosition1 = paddle1.offsetTop;
+  currentPaddlePosition2 = paddle2.offsetTop;
+  
+});
+
+clientSocket.on("Win", async code => {
+  switch (code.pId) {
+    case 1:
+      document.getElementById("winner").innerText = "Player 1(" + code.name + ") won!";
+      break;
+    case 2:
+      document.getElementById("winner").innerText = "Player 2(" + code.name + ") won!";
+      break;
+  }
+  document.getElementById("lobby").hidden = false;
+});
+
+// Listen to keydown event
+document.addEventListener('keydown', event => {
+  if (started && !down) {
+    // We have to check whether a movement is already in progress. This is
+    // necessary because keydown events arrive often when key is
+    // continuously pressed.
+    if (player === 1) {
+      if (!intervalPaddle1) {
+        switch (event.code) {
+          case 'ArrowDown':
+            down = true;
+            directionPaddle1 = speedPaddle1;
+            startMoving(player);
+            break;
+          case 'ArrowUp':
+            down = true;
+            directionPaddle1 = speedPaddle1 * -1;
+            startMoving(player);
+            break;
+        }
+      }
+      if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
+        // Send ArrowKey message to server
+        clientSocket.emit('ArrowDown', event.code);
+      }
+    } else if (player === 2) {
+      if (!intervalPaddle2) {
+        switch (event.code) {
+          case 'ArrowDown':
+            down = true;
+            directionPaddle2 = speedPaddle2;
+            startMoving(player);
+            break;
+          case 'ArrowUp':
+            down = true;
+            directionPaddle2 = speedPaddle2 * -1;
+            startMoving(player);
+            break;
+        }
+      }
+      if (event.code === 'ArrowUp' || event.code === 'ArrowDown') {
+        // Send ArrowKey message to server
+        clientSocket.emit('ArrowDown', event.code);
+      }
+    }
+  }
+});
+
+// Listen to keyup event
+document.addEventListener('keyup', event => {
+  if (started && down) {
+    if (player === 1) {
+      switch (event.code) {
+        case 'ArrowDown':
+        case 'ArrowUp':
+          down = false;
+          stopMoving(player);
+          break;
+      }
+    } else if (player === 2) {
+      switch (event.code) {
+        case 'ArrowDown':
+        case 'ArrowUp':
+          down = false;
+          stopMoving(player);
+          break;
+      }
+    }
+  }
+});
+
+
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function setPlayer(val: number, gameId: number) {
+  id_game = gameId;
+  clientSocket.emit("Reconnect", { id: gameId, playerno: val });
+  document.getElementById("game").style.display = "block";
+  paddle1 = document.getElementsByClassName('paddle1')[0];
+  paddle2 = document.getElementsByClassName('paddle2')[0];
+  paddleHeight = paddle1.clientHeight;
+  paddleHalfHeight = paddleHeight / 2;
+  currentPaddlePosition1 = paddle1.offsetTop;
+  currentPaddlePosition2 = paddle2.offsetTop;
+  ball = document.getElementById('ball');
+  ballSize = { width: ball.clientWidth, height: ball.clientHeight };
+  ballHalfSize = splitSize(ballSize, 2);
+  clientSize = { width: document.documentElement.clientWidth, height: document.documentElement.clientHeight };
+  clientHalfSize = splitSize(clientSize, 2);
+  document.getElementById("pointsPl1").innerText = "0";
+  document.getElementById("pointsPl2").innerText = "0";
+
+  player = val;
   while (true) {
     if (player === 1) {
-      clientSocket.emit('Move', { pos: currentPaddlePosition1 / heightFactor, paddleNum: 1 });
+      clientSocket.emit('Move', { pos: currentPaddlePosition1 / heightFactor, paddleNum: 1, gameId: id_game });
     }
     else if (player === 2) {
-      clientSocket.emit('Move', { pos: currentPaddlePosition2 / heightFactor, paddleNum: 2 });
+      clientSocket.emit('Move', { pos: currentPaddlePosition2 / heightFactor, paddleNum: 2, gameId: id_game });
     }
     await delay(16);
   }
@@ -318,6 +328,6 @@ function splitSize(s: Size, divider: number): Size {
   };
 }
 
-function toLobby(){
+function toLobby() {
   (<any>window.parent).lobby();
 }
