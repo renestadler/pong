@@ -56,6 +56,8 @@ socket.on("Join", function (infos) {
     document.getElementById("gameTitle").innerText = `Title: ${infos.gameName}, Id: ${infos.id}`;
     document.getElementById("pl1").innerText = `Player 1: ${infos.playerName}`;
     document.getElementById("pl2").innerText = `Player 2: ${playerName}`;
+    (<HTMLInputElement>document.getElementById("pointsToWin")).value = infos.ptw;
+    (<HTMLInputElement>document.getElementById("difficulty")).value = infos.difficulty;
     playerNameEnemy = infos.playerName;
     gameId = infos.id;
     playerNum = 2;
@@ -70,6 +72,8 @@ socket.on("Watch", async function (infos) {
         document.getElementById("gameTitle").innerText = `Title: ${infos.gameName}, Id: ${infos.id}`;
         document.getElementById("pl1").innerText = `Player 1: ${infos.playerName1}`;
         document.getElementById("pl2").innerText = `Player 2: ${infos.playerName2}`;
+        (<HTMLInputElement>document.getElementById("pointsToWin")).value = infos.ptw;
+        (<HTMLInputElement>document.getElementById("difficulty")).value = infos.difficulty;
         gameId = infos.id;
     } else if (infos.status === 1) { //Running
         gameId = infos.id;
@@ -77,7 +81,7 @@ socket.on("Watch", async function (infos) {
     }
 });
 
-socket.on("JoinP2", function(newPlayer){
+socket.on("JoinP2", function (newPlayer) {
     document.getElementById("pl2").innerText = `Player 2: ${newPlayer}`;
     if (newPlayer !== playerName) {
         playerNameEnemy = newPlayer;

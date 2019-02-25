@@ -105,7 +105,8 @@ io.on('connection', (socket) => {
 
     curGame.status = GameStatus.RUNNING;
     await delay(1500);
-    sendToAll('Options', { ball: ballSize, client: clientSize, paddle: paddleSize }, curGame);
+    let curPaddleSize: Size = { width: paddleSize.width, height: paddleSize.height -((curGame.difficulty-1)*3.5) };
+    sendToAll('Options', { ball: ballSize, client: clientSize, paddle: curPaddleSize }, curGame);
     sendToAll('Wait', 3, curGame);
     await delay(1000);
     sendToAll('Wait', 2, curGame);
@@ -258,7 +259,7 @@ io.on('connection', (socket) => {
     }
     toJoin[0].p2Name = gameStuff.pName;
     toJoin[0].p2Socket = socket;
-    socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status });
+    socket.emit('Join', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName: toJoin[0].p1Name, status: toJoin[0].status, ptw: toJoin[0].pointsToWin, difficulty: toJoin[0].difficulty });
     sendToAll('JoinP2', gameStuff.pName, toJoin[0]);
     socket.broadcast.emit('Joined', gameStuff.gameId);
   });
@@ -270,10 +271,7 @@ io.on('connection', (socket) => {
       return;
     }
     toJoin[0].watching.push(socket);
-    socket.emit('Watch', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName1: toJoin[0].p1Name, playerName2: toJoin[0].p2Name, status: toJoin[0].status });
-  });
-
-  socket.on('Clear', function (playerId) {
+    socket.emit('Watch', { gameName: toJoin[0].name, id: gameStuff.gameId, playerName1: toJoin[0].p1Name, playerName2: toJoin[0].p2Name, status: toJoin[0].status, ptw: toJoin[0].pointsToWin, difficulty: toJoin[0].difficulty });
   });
 });
 
@@ -290,7 +288,7 @@ function animateBall(currentBallPosition: Point, targetBallPosition: Point, game
   const distance = Math.sqrt(distanceToTarget.width * distanceToTarget.width + distanceToTarget.height * distanceToTarget.height);
 
   // Variable defining the speed of the animation (pixels that the ball travels per interval)
-  const pixelsPerInterval = 2;
+  const pixelsPerInterval = 2 - (0.45 * (game.difficulty - 1));
   // Calculate distance per interval
   const distancePerInterval = splitSize(distanceToTarget, distance * pixelsPerInterval);
   // Return a promise that will resolve when animation is done
@@ -369,8 +367,12 @@ function splitSize(s: Size, divider: number): Size {
 }
 
 function sendToAll(topic: string, val: any, game: MyGame) {
-  game.p1Socket.emit(topic, val);
-  game.p2Socket.emit(topic, val);
+  if (game.p1Socket != null) {
+    game.p1Socket.emit(topic, val);
+  }
+  if (game.p2Socket != null) {
+    game.p2Socket.emit(topic, val);
+  }
   for (let i = 0; i < game.watching.length; i++) {
     game.watching[i].emit(topic, val);
   }
